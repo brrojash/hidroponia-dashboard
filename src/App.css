@@ -1,0 +1,70 @@
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background-color: #0d1117;
+  color: #e6edf3;
+}
+
+.App {
+  padding: 20px;
+  max-width: 900px;
+  margin: auto;
+}
+
+h1, h2 {
+  text-align: center;
+  color: #58a6ff;
+}
+
+.tarjetas {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  margin-bottom: 30px;
+}
+
+.tarjeta {
+  background-color: #161b22;
+  padding: 20px;
+  margin: 10px;
+  border-radius: 12px;
+  width: 250px;
+  box-shadow: 0 0 5px #30363d;
+  text-align: center;
+}
+
+.btn {
+  padding: 10px 20px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  color: white;
+}
+
+.btn.verde {
+  background-color: #238636;
+}
+
+.btn.rojo {
+  background-color: #da3633;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background-color: #161b22;
+}
+
+th, td {
+  padding: 10px;
+  border: 1px solid #30363d;
+  text-align: center;
+}
+
+.error {
+  color: #ff7b72;
+  font-weight: bold;
+}
