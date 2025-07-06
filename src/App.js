@@ -1,4 +1,3 @@
-// src/App.js
 import React, { useEffect, useState } from "react";
 import mqtt from "mqtt";
 import "./App.css";
@@ -14,36 +13,25 @@ function App() {
   const [sensorData, setSensorData] = useState({ temperatura: "--", humedad: "--", bomba: false });
   const [lastOn, setLastOn] = useState(null);
   const [lastOff, setLastOff] = useState(null);
-  const [intervaloOn, setIntervaloOn] = useState(5);
-  const [intervaloOff, setIntervaloOff] = useState(10);
+  const [intervaloOn, setIntervaloOn] = useState("");
+  const [intervaloOff, setIntervaloOff] = useState("");
 
-  // ✅ Obtener último estado al cargar
-  useEffect(() => {
-    const fetchEstadoInicial = async () => {
-      try {
-        const res = await fetch("https://hidroponia-backend.onrender.com/estado");
-        const data = await res.json();
-
-        if (data && data.temperatura !== null) {
-          setSensorData({
-            temperatura: data.temperatura,
-            humedad: data.humedad,
-            bomba: data.bomba
-          });
-
-          const hora = new Date(data.fecha).toLocaleTimeString();
-          if (data.bomba) setLastOn(hora);
-          else setLastOff(hora);
-        }
-      } catch (error) {
-        console.error("❌ Error al obtener estado inicial:", error.message);
+  // 🔄 Cargar intervalos guardados desde backend
+  const cargarConfiguracion = async () => {
+    try {
+      const res = await fetch("https://hidroponia-backend.onrender.com/registros");
+      const data = await res.json();
+      const ultima = data.find(d => d.evento === "configuracion_actualizada");
+      if (ultima) {
+        setIntervaloOn(ultima.intervalo_on);
+        setIntervaloOff(ultima.intervalo_off);
       }
-    };
+    } catch (err) {
+      console.error("❌ Error al cargar configuración:", err.message);
+    }
+  };
 
-    fetchEstadoInicial();
-  }, []);
-
-  // 🔌 Conexión MQTT
+  // 🔌 Conexión MQTT y suscripción
   useEffect(() => {
     const client = mqtt.connect(MQTT_URL, {
       clientId: "react_dashboard_" + Math.random().toString(16).substr(2, 8),
@@ -75,10 +63,12 @@ function App() {
     });
 
     setClient(client);
+    cargarConfiguracion(); // 🚀 Cargar configuración al inicio
+
     return () => client.end();
   }, []);
 
-  // 🚀 Enviar comando ON/OFF
+  // 📤 Enviar comando a la ESP32 por MQTT
   const publicar = (msg) => {
     if (client && isConnected) {
       client.publish("hidroponia/control", msg);
@@ -88,7 +78,7 @@ function App() {
     }
   };
 
-  // 💾 Guardar configuración de riego
+  // 💾 Guardar configuración
   const guardarConfiguracion = async () => {
     const body = {
       intervalo_on: parseInt(intervaloOn),
@@ -129,11 +119,19 @@ function App() {
         <h3>⚙️ Intervalos</h3>
         <label>
           Minutos encendida:{" "}
-          <input type="number" value={intervaloOn} onChange={(e) => setIntervaloOn(e.target.value)} />
+          <input
+            type="number"
+            value={intervaloOn}
+            onChange={(e) => setIntervaloOn(e.target.value)}
+          />
         </label>
         <label>
           Minutos apagada:{" "}
-          <input type="number" value={intervaloOff} onChange={(e) => setIntervaloOff(e.target.value)} />
+          <input
+            type="number"
+            value={intervaloOff}
+            onChange={(e) => setIntervaloOff(e.target.value)}
+          />
         </label>
         <button onClick={guardarConfiguracion}>💾 Guardar</button>
       </div>
@@ -144,4 +142,3 @@ function App() {
 }
 
 export default App;
-// by Bryan Rojas
