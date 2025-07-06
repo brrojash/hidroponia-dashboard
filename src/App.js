@@ -1,3 +1,4 @@
+// src/App.js
 import React, { useEffect, useState } from "react";
 import mqtt from "mqtt";
 import "./App.css";
@@ -11,12 +12,28 @@ function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
   const [sensorData, setSensorData] = useState({ temperatura: "--", humedad: "--", bomba: false });
-  const [lastOn, setLastOn] = useState(null);
-  const [lastOff, setLastOff] = useState(null);
+  const [lastOn, setLastOn] = useState("--");
+  const [lastOff, setLastOff] = useState("--");
   const [intervaloOn, setIntervaloOn] = useState("");
   const [intervaloOff, setIntervaloOff] = useState("");
 
-  // 🔄 Cargar intervalos guardados desde backend
+  // ✅ Cargar último estado desde Supabase
+  const cargarEstadoInicial = async () => {
+    try {
+      const res = await fetch("https://hidroponia-backend.onrender.com/estado");
+      const data = await res.json();
+      if (data && data.temperatura !== null) {
+        setSensorData(data);
+        const hora = new Date(data.fecha).toLocaleTimeString();
+        if (data.bomba) setLastOn(hora);
+        else setLastOff(hora);
+      }
+    } catch (err) {
+      console.error("❌ Error al cargar estado:", err.message);
+    }
+  };
+
+  // ✅ Cargar configuración (intervalos) desde registros
   const cargarConfiguracion = async () => {
     try {
       const res = await fetch("https://hidroponia-backend.onrender.com/registros");
@@ -31,10 +48,10 @@ function App() {
     }
   };
 
-  // 🔌 Conexión MQTT y suscripción
+  // 🔌 Conexión MQTT
   useEffect(() => {
     const client = mqtt.connect(MQTT_URL, {
-      clientId: "react_dashboard_" + Math.random().toString(16).substr(2, 8),
+      clientId: "dashboard_" + Math.random().toString(16).substr(2, 8),
       username: MQTT_USER,
       password: MQTT_PASS,
       clean: true,
@@ -51,9 +68,9 @@ function App() {
       if (topic === "hidroponia/datos") {
         const json = JSON.parse(message.toString());
         setSensorData(json);
-        const now = new Date().toLocaleTimeString();
-        if (json.bomba) setLastOn(now);
-        else setLastOff(now);
+        const hora = new Date().toLocaleTimeString();
+        if (json.bomba) setLastOn(hora);
+        else setLastOff(hora);
       }
     });
 
@@ -63,12 +80,13 @@ function App() {
     });
 
     setClient(client);
-    cargarConfiguracion(); // 🚀 Cargar configuración al inicio
+    cargarEstadoInicial();     // 🔄 Cargar últimos datos
+    cargarConfiguracion();     // 🔄 Cargar configuración
 
     return () => client.end();
   }, []);
 
-  // 📤 Enviar comando a la ESP32 por MQTT
+  // 📤 Enviar comando
   const publicar = (msg) => {
     if (client && isConnected) {
       client.publish("hidroponia/control", msg);
@@ -107,8 +125,8 @@ function App() {
         <p>⚙️ Bomba: <strong>{sensorData.bomba ? "Encendida" : "Apagada"}</strong></p>
       </div>
 
-      <p>🕒 Última vez encendida: {lastOn || "--"}</p>
-      <p>🕓 Última vez apagada: {lastOff || "--"}</p>
+      <p>🕒 Última vez encendida: {lastOn}</p>
+      <p>🕓 Última vez apagada: {lastOff}</p>
 
       <div className="controls">
         <button onClick={() => publicar("on")}>🚰 Encender</button>
@@ -142,4 +160,3 @@ function App() {
 }
 
 export default App;
-// Bryan R.
