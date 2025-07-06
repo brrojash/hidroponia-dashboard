@@ -17,7 +17,33 @@ function App() {
   const [intervaloOn, setIntervaloOn] = useState(5);
   const [intervaloOff, setIntervaloOff] = useState(10);
 
-  // Conexión MQTT
+  // ✅ Obtener último estado al cargar
+  useEffect(() => {
+    const fetchEstadoInicial = async () => {
+      try {
+        const res = await fetch("https://hidroponia-backend.onrender.com/estado");
+        const data = await res.json();
+
+        if (data && data.temperatura !== null) {
+          setSensorData({
+            temperatura: data.temperatura,
+            humedad: data.humedad,
+            bomba: data.bomba
+          });
+
+          const hora = new Date(data.fecha).toLocaleTimeString();
+          if (data.bomba) setLastOn(hora);
+          else setLastOff(hora);
+        }
+      } catch (error) {
+        console.error("❌ Error al obtener estado inicial:", error.message);
+      }
+    };
+
+    fetchEstadoInicial();
+  }, []);
+
+  // 🔌 Conexión MQTT
   useEffect(() => {
     const client = mqtt.connect(MQTT_URL, {
       clientId: "react_dashboard_" + Math.random().toString(16).substr(2, 8),
@@ -52,7 +78,7 @@ function App() {
     return () => client.end();
   }, []);
 
-  // Enviar comandos
+  // 🚀 Enviar comando ON/OFF
   const publicar = (msg) => {
     if (client && isConnected) {
       client.publish("hidroponia/control", msg);
@@ -62,7 +88,7 @@ function App() {
     }
   };
 
-  // Guardar configuración
+  // 💾 Guardar configuración de riego
   const guardarConfiguracion = async () => {
     const body = {
       intervalo_on: parseInt(intervaloOn),
@@ -102,10 +128,12 @@ function App() {
       <div className="config">
         <h3>⚙️ Intervalos</h3>
         <label>
-          Minutos encendida: <input type="number" value={intervaloOn} onChange={(e) => setIntervaloOn(e.target.value)} />
+          Minutos encendida:{" "}
+          <input type="number" value={intervaloOn} onChange={(e) => setIntervaloOn(e.target.value)} />
         </label>
         <label>
-          Minutos apagada: <input type="number" value={intervaloOff} onChange={(e) => setIntervaloOff(e.target.value)} />
+          Minutos apagada:{" "}
+          <input type="number" value={intervaloOff} onChange={(e) => setIntervaloOff(e.target.value)} />
         </label>
         <button onClick={guardarConfiguracion}>💾 Guardar</button>
       </div>
@@ -116,4 +144,3 @@ function App() {
 }
 
 export default App;
-// src/App.css
