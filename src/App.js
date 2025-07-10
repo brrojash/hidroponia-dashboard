@@ -24,9 +24,12 @@ function App() {
 
   const [intervaloOn, setIntervaloOn] = useState("");
   const [intervaloOff, setIntervaloOff] = useState("");
+
+  const [horaLuzOn, setHoraLuzOn] = useState(22); // por defecto 10 PM
+  const [horaLuzOff, setHoraLuzOff] = useState(2); // por defecto 2 AM
+
   const [eventosLuz, setEventosLuz] = useState([]);
 
-  // ✅ Cargar último estado desde backend
   const cargarEstadoInicial = async () => {
     try {
       const res = await fetch("https://hidroponia-backend.onrender.com/estado");
@@ -44,7 +47,6 @@ function App() {
     }
   };
 
-  // ✅ Cargar configuración (intervalos)
   const cargarConfiguracion = async () => {
     try {
       const res = await fetch("https://hidroponia-backend.onrender.com/registros");
@@ -59,7 +61,30 @@ function App() {
     }
   };
 
-  // ✅ Cargar historial de eventos de luces
+  const cargarHorarioLuces = async () => {
+    try {
+      const res = await fetch("https://hidroponia-backend.onrender.com/luces/config");
+      const data = await res.json();
+      if (data.hora_on !== undefined) setHoraLuzOn(data.hora_on);
+      if (data.hora_off !== undefined) setHoraLuzOff(data.hora_off);
+    } catch (err) {
+      console.error("❌ Error al cargar horario luces:", err.message);
+    }
+  };
+
+  const guardarHorarioLuces = async () => {
+    try {
+      await fetch("https://hidroponia-backend.onrender.com/luces/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hora_on: parseInt(horaLuzOn), hora_off: parseInt(horaLuzOff) }),
+      });
+      setStatusMsg("✅ Horario de luces guardado");
+    } catch (err) {
+      setStatusMsg("❌ Error al guardar horario de luces");
+    }
+  };
+
   const cargarEventosLuz = async () => {
     try {
       const res = await fetch("https://hidroponia-backend.onrender.com/luces");
@@ -70,7 +95,6 @@ function App() {
     }
   };
 
-  // 🔌 Conexión MQTT
   useEffect(() => {
     const client = mqtt.connect(MQTT_URL, {
       clientId: "dashboard_" + Math.random().toString(16).substr(2, 8),
@@ -106,12 +130,12 @@ function App() {
     setClient(client);
     cargarEstadoInicial();
     cargarConfiguracion();
+    cargarHorarioLuces();
     cargarEventosLuz();
 
     return () => client.end();
   }, []);
 
-  // 📤 Enviar comando por MQTT
   const publicar = (msg) => {
     if (client && isConnected) {
       client.publish("hidroponia/control", msg);
@@ -121,7 +145,6 @@ function App() {
     }
   };
 
-  // 💾 Guardar configuración de riego
   const guardarConfiguracion = async () => {
     const body = {
       intervalo_on: parseInt(intervaloOn),
@@ -187,6 +210,27 @@ function App() {
         <button onClick={guardarConfiguracion}>💾 Guardar</button>
       </div>
 
+      <div className="config">
+        <h3>🌗 Horario automático de luces UV</h3>
+        <label>
+          Hora encendido (0-23):{" "}
+          <input
+            type="number"
+            value={horaLuzOn}
+            onChange={(e) => setHoraLuzOn(e.target.value)}
+          />
+        </label>
+        <label>
+          Hora apagado (0-23):{" "}
+          <input
+            type="number"
+            value={horaLuzOff}
+            onChange={(e) => setHoraLuzOff(e.target.value)}
+          />
+        </label>
+        <button onClick={guardarHorarioLuces}>💾 Guardar horario</button>
+      </div>
+
       <div className="eventos-luz">
         <h3>📋 Historial de eventos de luces UV</h3>
         <table>
@@ -204,8 +248,8 @@ function App() {
             ) : (
               eventosLuz.map((evento, i) => (
                 <tr key={i}>
-                  <td>{evento.hora_encendido ? new Date(evento.hora_encendido).toLocaleTimeString() : "--"}</td>
-                  <td>{evento.hora_apagado ? new Date(evento.hora_apagado).toLocaleTimeString() : "--"}</td>
+                  <td>{evento.fecha ? new Date(evento.fecha).toLocaleTimeString() : "--"}</td>
+                  <td>--</td>
                   <td>{evento.modo}</td>
                   <td>{evento.descripcion}</td>
                 </tr>
