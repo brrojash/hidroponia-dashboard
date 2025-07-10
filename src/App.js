@@ -1,4 +1,3 @@
-// src/App.js
 import React, { useEffect, useState } from "react";
 import mqtt from "mqtt";
 import "./App.css";
@@ -11,13 +10,21 @@ function App() {
   const [client, setClient] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
-  const [sensorData, setSensorData] = useState({ temperatura: "--", humedad: "--", bomba: false });
+  const [sensorData, setSensorData] = useState({
+    temperatura: "--",
+    humedad: "--",
+    bomba: false,
+    luces: false,
+  });
+
   const [lastOn, setLastOn] = useState("--");
   const [lastOff, setLastOff] = useState("--");
+  const [lastLuzOn, setLastLuzOn] = useState("--");
+  const [lastLuzOff, setLastLuzOff] = useState("--");
+
   const [intervaloOn, setIntervaloOn] = useState("");
   const [intervaloOff, setIntervaloOff] = useState("");
 
-  // ✅ Cargar último estado desde Supabase
   const cargarEstadoInicial = async () => {
     try {
       const res = await fetch("https://hidroponia-backend.onrender.com/estado");
@@ -27,13 +34,14 @@ function App() {
         const hora = new Date(data.fecha).toLocaleTimeString();
         if (data.bomba) setLastOn(hora);
         else setLastOff(hora);
+        if (data.luces) setLastLuzOn(hora);
+        else setLastLuzOff(hora);
       }
     } catch (err) {
       console.error("❌ Error al cargar estado:", err.message);
     }
   };
 
-  // ✅ Cargar configuración (intervalos) desde registros
   const cargarConfiguracion = async () => {
     try {
       const res = await fetch("https://hidroponia-backend.onrender.com/registros");
@@ -48,7 +56,6 @@ function App() {
     }
   };
 
-  // 🔌 Conexión MQTT
   useEffect(() => {
     const client = mqtt.connect(MQTT_URL, {
       clientId: "dashboard_" + Math.random().toString(16).substr(2, 8),
@@ -68,9 +75,13 @@ function App() {
       if (topic === "hidroponia/datos") {
         const json = JSON.parse(message.toString());
         setSensorData(json);
+
         const hora = new Date().toLocaleTimeString();
         if (json.bomba) setLastOn(hora);
         else setLastOff(hora);
+
+        if (json.luces) setLastLuzOn(hora);
+        else setLastLuzOff(hora);
       }
     });
 
@@ -80,13 +91,12 @@ function App() {
     });
 
     setClient(client);
-    cargarEstadoInicial();     // 🔄 Cargar últimos datos
-    cargarConfiguracion();     // 🔄 Cargar configuración
+    cargarEstadoInicial();
+    cargarConfiguracion();
 
     return () => client.end();
   }, []);
 
-  // 📤 Enviar comando
   const publicar = (msg) => {
     if (client && isConnected) {
       client.publish("hidroponia/control", msg);
@@ -96,7 +106,6 @@ function App() {
     }
   };
 
-  // 💾 Guardar configuración
   const guardarConfiguracion = async () => {
     const body = {
       intervalo_on: parseInt(intervaloOn),
@@ -123,18 +132,26 @@ function App() {
         <p>🌡️ Temp: <strong>{sensorData.temperatura} °C</strong></p>
         <p>💧 Hum: <strong>{sensorData.humedad} %</strong></p>
         <p>⚙️ Bomba: <strong>{sensorData.bomba ? "Encendida" : "Apagada"}</strong></p>
+        <p>💡 Luces UV: <strong>{sensorData.luces ? "Encendidas" : "Apagadas"}</strong></p>
       </div>
 
-      <p>🕒 Última vez encendida: {lastOn}</p>
-      <p>🕓 Última vez apagada: {lastOff}</p>
+      <p>🕒 Última vez bomba encendida: {lastOn}</p>
+      <p>🕓 Última vez bomba apagada: {lastOff}</p>
+      <p>🌙 Luces encendidas: {lastLuzOn}</p>
+      <p>🌑 Luces apagadas: {lastLuzOff}</p>
 
       <div className="controls">
-        <button onClick={() => publicar("on")}>🚰 Encender</button>
-        <button onClick={() => publicar("off")}>💤 Apagar</button>
+        <h3>🚰 Control bomba</h3>
+        <button onClick={() => publicar("on")}>Encender bomba</button>
+        <button onClick={() => publicar("off")}>Apagar bomba</button>
+
+        <h3>💡 Control luces UV</h3>
+        <button onClick={() => publicar("luces_on")}>Encender luces</button>
+        <button onClick={() => publicar("luces_off")}>Apagar luces</button>
       </div>
 
       <div className="config">
-        <h3>⚙️ Intervalos</h3>
+        <h3>⚙️ Intervalos de riego</h3>
         <label>
           Minutos encendida:{" "}
           <input
