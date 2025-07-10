@@ -24,7 +24,9 @@ function App() {
 
   const [intervaloOn, setIntervaloOn] = useState("");
   const [intervaloOff, setIntervaloOff] = useState("");
+  const [eventosLuz, setEventosLuz] = useState([]);
 
+  // ✅ Cargar último estado desde backend
   const cargarEstadoInicial = async () => {
     try {
       const res = await fetch("https://hidroponia-backend.onrender.com/estado");
@@ -42,6 +44,7 @@ function App() {
     }
   };
 
+  // ✅ Cargar configuración (intervalos)
   const cargarConfiguracion = async () => {
     try {
       const res = await fetch("https://hidroponia-backend.onrender.com/registros");
@@ -56,6 +59,18 @@ function App() {
     }
   };
 
+  // ✅ Cargar historial de eventos de luces
+  const cargarEventosLuz = async () => {
+    try {
+      const res = await fetch("https://hidroponia-backend.onrender.com/luces");
+      const data = await res.json();
+      setEventosLuz(data);
+    } catch (err) {
+      console.error("❌ Error al obtener eventos de luces:", err.message);
+    }
+  };
+
+  // 🔌 Conexión MQTT
   useEffect(() => {
     const client = mqtt.connect(MQTT_URL, {
       clientId: "dashboard_" + Math.random().toString(16).substr(2, 8),
@@ -75,11 +90,9 @@ function App() {
       if (topic === "hidroponia/datos") {
         const json = JSON.parse(message.toString());
         setSensorData(json);
-
         const hora = new Date().toLocaleTimeString();
         if (json.bomba) setLastOn(hora);
         else setLastOff(hora);
-
         if (json.luces) setLastLuzOn(hora);
         else setLastLuzOff(hora);
       }
@@ -93,10 +106,12 @@ function App() {
     setClient(client);
     cargarEstadoInicial();
     cargarConfiguracion();
+    cargarEventosLuz();
 
     return () => client.end();
   }, []);
 
+  // 📤 Enviar comando por MQTT
   const publicar = (msg) => {
     if (client && isConnected) {
       client.publish("hidroponia/control", msg);
@@ -106,6 +121,7 @@ function App() {
     }
   };
 
+  // 💾 Guardar configuración de riego
   const guardarConfiguracion = async () => {
     const body = {
       intervalo_on: parseInt(intervaloOn),
@@ -169,6 +185,34 @@ function App() {
           />
         </label>
         <button onClick={guardarConfiguracion}>💾 Guardar</button>
+      </div>
+
+      <div className="eventos-luz">
+        <h3>📋 Historial de eventos de luces UV</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>🕒 Encendido</th>
+              <th>🕓 Apagado</th>
+              <th>🔁 Modo</th>
+              <th>📝 Descripción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {eventosLuz.length === 0 ? (
+              <tr><td colSpan="4">Sin registros</td></tr>
+            ) : (
+              eventosLuz.map((evento, i) => (
+                <tr key={i}>
+                  <td>{evento.hora_encendido ? new Date(evento.hora_encendido).toLocaleTimeString() : "--"}</td>
+                  <td>{evento.hora_apagado ? new Date(evento.hora_apagado).toLocaleTimeString() : "--"}</td>
+                  <td>{evento.modo}</td>
+                  <td>{evento.descripcion}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
       <p className="msg">{statusMsg}</p>
