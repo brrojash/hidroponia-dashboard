@@ -178,8 +178,23 @@ function App() {
       `,
       backgroundSize: "50px 50px",
       padding: "20px",
-      fontFamily: "'Orbitron', 'Segoe UI', monospace"
+      fontFamily: "'Orbitron', 'Segoe UI', monospace",
+      position: "relative",
+      overflow: "hidden"
     }}>
+      {/* Scanlines effect */}
+      <div style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: "100%",
+        background: "linear-gradient(0deg, transparent 0%, rgba(0, 255, 65, 0.03) 50%, transparent 100%)",
+        backgroundSize: "100% 4px",
+        pointerEvents: "none",
+        zIndex: 9999,
+        animation: "scanlines 8s linear infinite"
+      }}></div>
       {/* Header */}
       <div style={{
         maxWidth: "1200px",
@@ -316,7 +331,12 @@ function App() {
               e.currentTarget.style.boxShadow = "0 0 30px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 255, 65, 0.05)";
             }}
             >
-              <div style={{ fontSize: "48px", marginBottom: "10px", filter: "drop-shadow(0 0 10px #00ff41)" }}>🌡️</div>
+              <div style={{ 
+                fontSize: "48px", 
+                marginBottom: "10px", 
+                filter: "drop-shadow(0 0 10px #00ff41)",
+                animation: sensorData.temperatura !== "--" ? "float 3s ease-in-out infinite" : "none"
+              }}>🌡️</div>
               <div style={{ fontSize: "14px", color: "#00ff41", opacity: 0.7, marginBottom: "5px", textTransform: "uppercase", letterSpacing: "1px" }}>Temperatura</div>
               <div style={{ fontSize: "36px", fontWeight: "bold", color: "#00ff41", textShadow: "0 0 20px #00ff41" }}>{sensorData.temperatura}°C</div>
             </div>
@@ -340,7 +360,12 @@ function App() {
               e.currentTarget.style.boxShadow = "0 0 30px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 255, 65, 0.05)";
             }}
             >
-              <div style={{ fontSize: "48px", marginBottom: "10px", filter: "drop-shadow(0 0 10px #00ff41)" }}>💧</div>
+              <div style={{ 
+                fontSize: "48px", 
+                marginBottom: "10px", 
+                filter: "drop-shadow(0 0 10px #00ff41)",
+                animation: sensorData.humedad !== "--" ? "bounce 2s ease-in-out infinite" : "none"
+              }}>💧</div>
               <div style={{ fontSize: "14px", color: "#00ff41", opacity: 0.7, marginBottom: "5px", textTransform: "uppercase", letterSpacing: "1px" }}>Humedad</div>
               <div style={{ fontSize: "36px", fontWeight: "bold", color: "#00ff41", textShadow: "0 0 20px #00ff41" }}>{sensorData.humedad}%</div>
             </div>
@@ -367,7 +392,9 @@ function App() {
               <div style={{ 
                 fontSize: "48px", 
                 marginBottom: "10px", 
-                filter: sensorData.bomba ? "drop-shadow(0 0 10px #00ff41)" : "drop-shadow(0 0 10px #ff0040)"
+                filter: sensorData.bomba ? "drop-shadow(0 0 10px #00ff41)" : "drop-shadow(0 0 10px #ff0040)",
+                animation: sensorData.bomba ? "spin 2s linear infinite" : "none",
+                display: "inline-block"
               }}>⚙️</div>
               <div style={{ 
                 fontSize: "14px", 
@@ -381,7 +408,8 @@ function App() {
                 fontSize: "24px", 
                 fontWeight: "bold",
                 color: sensorData.bomba ? "#00ff41" : "#ff0040",
-                textShadow: sensorData.bomba ? "0 0 20px #00ff41" : "0 0 20px #ff0040"
+                textShadow: sensorData.bomba ? "0 0 20px #00ff41" : "0 0 20px #ff0040",
+                animation: sensorData.bomba ? "textGlow 1.5s ease-in-out infinite" : "none"
               }}>
                 {sensorData.bomba ? "ENCENDIDA" : "APAGADA"}
               </div>
@@ -417,7 +445,9 @@ function App() {
               <div style={{ 
                 fontSize: "48px", 
                 marginBottom: "10px",
-                filter: sensorData.luces ? "drop-shadow(0 0 10px #00ff41)" : "drop-shadow(0 0 10px #ff0040)"
+                filter: sensorData.luces ? "drop-shadow(0 0 15px #00ff41)" : "drop-shadow(0 0 10px #ff0040)",
+                animation: sensorData.luces ? "lightPulse 1.5s ease-in-out infinite" : "none",
+                display: "inline-block"
               }}>💡</div>
               <div style={{ 
                 fontSize: "14px", 
@@ -431,7 +461,8 @@ function App() {
                 fontSize: "24px", 
                 fontWeight: "bold",
                 color: sensorData.luces ? "#00ff41" : "#ff0040",
-                textShadow: sensorData.luces ? "0 0 20px #00ff41" : "0 0 20px #ff0040"
+                textShadow: sensorData.luces ? "0 0 20px #00ff41" : "0 0 20px #ff0040",
+                animation: sensorData.luces ? "textGlow 1.5s ease-in-out infinite" : "none"
               }}>
                 {sensorData.luces ? "ENCENDIDAS" : "APAGADAS"}
               </div>
@@ -470,14 +501,21 @@ function App() {
                 boxShadow: sensorData.bomba ? "0 0 20px rgba(0, 255, 65, 0.3)" : "0 0 20px rgba(255, 0, 64, 0.3)",
                 transition: "all 0.3s ease"
               }}>
-                <div style={{ fontSize: "48px", marginBottom: "10px", filter: sensorData.bomba ? "drop-shadow(0 0 10px #00ff41)" : "drop-shadow(0 0 10px #ff0040)" }}>⚙️</div>
+                <div style={{ 
+                  fontSize: "48px", 
+                  marginBottom: "10px", 
+                  filter: sensorData.bomba ? "drop-shadow(0 0 10px #00ff41)" : "drop-shadow(0 0 10px #ff0040)",
+                  animation: sensorData.bomba ? "spin 2s linear infinite" : "none",
+                  display: "inline-block"
+                }}>⚙️</div>
                 <div style={{ 
                   fontSize: "20px", 
                   fontWeight: "bold",
                   color: sensorData.bomba ? "#00ff41" : "#ff0040",
                   textShadow: sensorData.bomba ? "0 0 10px #00ff41" : "0 0 10px #ff0040",
                   textTransform: "uppercase",
-                  letterSpacing: "1px"
+                  letterSpacing: "1px",
+                  animation: sensorData.bomba ? "textGlow 1.5s ease-in-out infinite" : "none"
                 }}>
                   {sensorData.bomba ? "ENCENDIDA" : "APAGADA"}
                 </div>
@@ -566,14 +604,21 @@ function App() {
                 boxShadow: sensorData.luces ? "0 0 20px rgba(0, 255, 65, 0.3)" : "0 0 20px rgba(255, 0, 64, 0.3)",
                 transition: "all 0.3s ease"
               }}>
-                <div style={{ fontSize: "48px", marginBottom: "10px", filter: sensorData.luces ? "drop-shadow(0 0 10px #00ff41)" : "drop-shadow(0 0 10px #ff0040)" }}>💡</div>
+                <div style={{ 
+                  fontSize: "48px", 
+                  marginBottom: "10px", 
+                  filter: sensorData.luces ? "drop-shadow(0 0 15px #00ff41)" : "drop-shadow(0 0 10px #ff0040)",
+                  animation: sensorData.luces ? "lightPulse 1.5s ease-in-out infinite" : "none",
+                  display: "inline-block"
+                }}>💡</div>
                 <div style={{ 
                   fontSize: "20px", 
                   fontWeight: "bold",
                   color: sensorData.luces ? "#00ff41" : "#ff0040",
                   textShadow: sensorData.luces ? "0 0 10px #00ff41" : "0 0 10px #ff0040",
                   textTransform: "uppercase",
-                  letterSpacing: "1px"
+                  letterSpacing: "1px",
+                  animation: sensorData.luces ? "textGlow 1.5s ease-in-out infinite" : "none"
                 }}>
                   {sensorData.luces ? "ENCENDIDAS" : "APAGADAS"}
                 </div>
@@ -1008,6 +1053,56 @@ function App() {
             box-shadow: 0 0 40px rgba(0, 255, 65, 0.6);
           }
         }
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        @keyframes lightPulse {
+          0%, 100% {
+            filter: drop-shadow(0 0 15px #00ff41) brightness(1);
+            transform: scale(1);
+          }
+          50% {
+            filter: drop-shadow(0 0 25px #00ff41) brightness(1.3);
+            transform: scale(1.05);
+          }
+        }
+        @keyframes textGlow {
+          0%, 100% {
+            text-shadow: 0 0 20px #00ff41;
+          }
+          50% {
+            text-shadow: 0 0 30px #00ff41, 0 0 40px #00ff41;
+          }
+        }
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-10px);
+          }
+        }
+        @keyframes bounce {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-8px);
+          }
+        }
+        @keyframes scanlines {
+          0% {
+            transform: translateY(0);
+          }
+          100% {
+            transform: translateY(4px);
+          }
+        }
         * {
           box-sizing: border-box;
         }
@@ -1015,6 +1110,29 @@ function App() {
           margin: 0;
           padding: 0;
           overflow-x: hidden;
+        }
+        button {
+          position: relative;
+          overflow: hidden;
+        }
+        button:active {
+          transform: scale(0.95) !important;
+        }
+        button::after {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 0;
+          height: 0;
+          border-radius: 50%;
+          background: rgba(0, 255, 65, 0.3);
+          transform: translate(-50%, -50%);
+          transition: width 0.6s, height 0.6s;
+        }
+        button:active::after {
+          width: 300px;
+          height: 300px;
         }
         input[type="number"]::-webkit-inner-spin-button,
         input[type="number"]::-webkit-outer-spin-button {
