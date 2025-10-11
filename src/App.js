@@ -171,9 +171,14 @@ function App() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+      background: "#000000",
+      backgroundImage: `
+        linear-gradient(0deg, transparent 24%, rgba(0, 255, 65, 0.05) 25%, rgba(0, 255, 65, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 255, 65, 0.05) 75%, rgba(0, 255, 65, 0.05) 76%, transparent 77%, transparent),
+        linear-gradient(90deg, transparent 24%, rgba(0, 255, 65, 0.05) 25%, rgba(0, 255, 65, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 255, 65, 0.05) 75%, rgba(0, 255, 65, 0.05) 76%, transparent 77%, transparent)
+      `,
+      backgroundSize: "50px 50px",
       padding: "20px",
-      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+      fontFamily: "'Orbitron', 'Segoe UI', monospace"
     }}>
       {/* Header */}
       <div style={{
@@ -182,29 +187,35 @@ function App() {
         marginBottom: "30px"
       }}>
         <div style={{
-          background: "white",
-          borderRadius: "20px",
+          background: "rgba(0, 20, 0, 0.8)",
+          borderRadius: "5px",
           padding: "30px",
-          boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
+          boxShadow: "0 0 30px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 255, 65, 0.1)",
+          border: "2px solid #00ff41",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
-          gap: "20px"
+          gap: "20px",
+          transition: "all 0.3s ease"
         }}>
           <div>
             <h1 style={{
               margin: 0,
               fontSize: "32px",
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              fontWeight: "bold"
+              color: "#00ff41",
+              fontWeight: "bold",
+              textShadow: "0 0 20px #00ff41, 0 0 40px #00ff41",
+              letterSpacing: "2px",
+              transition: "all 0.3s ease"
             }}>
-              🌿 Sistema Hidropónico
+              🌿 AGROCOLMETEO
             </h1>
-            <p style={{ margin: "5px 0 0 0", color: "#666", fontSize: "14px" }}>
-              Monitoreo y control en tiempo real
+            <p style={{ margin: "5px 0 0 0", color: "#00ff41", fontSize: "14px", opacity: 0.7 }}>
+              ▸ Sistema Hidropónico · Monitoreo y control en tiempo real
+            </p>
+            <p style={{ margin: "5px 0 0 0", color: "#00ff41", fontSize: "12px", opacity: 0.5, fontStyle: "italic" }}>
+              Creado por Bryan R.
             </p>
           </div>
           <div style={{
@@ -212,19 +223,28 @@ function App() {
             alignItems: "center",
             gap: "10px",
             padding: "10px 20px",
-            borderRadius: "30px",
-            background: isConnected ? "#d4edda" : "#f8d7da",
-            border: `2px solid ${isConnected ? "#28a745" : "#dc3545"}`
+            borderRadius: "5px",
+            background: "rgba(0, 0, 0, 0.6)",
+            border: `2px solid ${isConnected ? "#00ff41" : "#ff0040"}`,
+            boxShadow: `0 0 20px ${isConnected ? "rgba(0, 255, 65, 0.5)" : "rgba(255, 0, 64, 0.5)"}`,
+            transition: "all 0.3s ease"
           }}>
             <div style={{
               width: "10px",
               height: "10px",
               borderRadius: "50%",
-              background: isConnected ? "#28a745" : "#dc3545",
-              animation: isConnected ? "pulse 2s infinite" : "none"
+              background: isConnected ? "#00ff41" : "#ff0040",
+              boxShadow: `0 0 10px ${isConnected ? "#00ff41" : "#ff0040"}`,
+              animation: isConnected ? "pulse 2s infinite" : "none",
+              transition: "all 0.3s ease"
             }}></div>
-            <span style={{ fontWeight: "600", color: isConnected ? "#155724" : "#721c24" }}>
-              {isConnected ? "Conectado" : "Desconectado"}
+            <span style={{ 
+              fontWeight: "600", 
+              color: isConnected ? "#00ff41" : "#ff0040",
+              textShadow: `0 0 10px ${isConnected ? "#00ff41" : "#ff0040"}`,
+              transition: "all 0.3s ease"
+            }}>
+              {isConnected ? "CONECTADO" : "DESCONECTADO"}
             </span>
           </div>
         </div>
@@ -239,14 +259,29 @@ function App() {
               onClick={() => setActiveTab(tab)}
               style={{
                 padding: "12px 24px",
-                border: "none",
-                borderRadius: "10px",
-                background: activeTab === tab ? "white" : "rgba(255,255,255,0.2)",
-                color: activeTab === tab ? "#667eea" : "white",
+                border: activeTab === tab ? "2px solid #00ff41" : "2px solid rgba(0, 255, 65, 0.3)",
+                borderRadius: "5px",
+                background: activeTab === tab ? "rgba(0, 255, 65, 0.2)" : "rgba(0, 0, 0, 0.6)",
+                color: activeTab === tab ? "#00ff41" : "rgba(0, 255, 65, 0.7)",
                 fontWeight: "600",
                 cursor: "pointer",
-                transition: "all 0.3s",
-                textTransform: "capitalize"
+                transition: "all 0.3s ease",
+                textTransform: "uppercase",
+                letterSpacing: "1px",
+                boxShadow: activeTab === tab ? "0 0 20px rgba(0, 255, 65, 0.5)" : "none",
+                textShadow: activeTab === tab ? "0 0 10px #00ff41" : "none"
+              }}
+              onMouseEnter={(e) => {
+                if (activeTab !== tab) {
+                  e.target.style.background = "rgba(0, 255, 65, 0.1)";
+                  e.target.style.borderColor = "#00ff41";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeTab !== tab) {
+                  e.target.style.background = "rgba(0, 0, 0, 0.6)";
+                  e.target.style.borderColor = "rgba(0, 255, 65, 0.3)";
+                }
               }}
             >
               {tab === "dashboard" && "📊"} {tab === "control" && "🎮"} 
@@ -264,67 +299,149 @@ function App() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "20px" }}>
             {/* Temperatura */}
             <div style={{
-              background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-              borderRadius: "20px",
+              background: "rgba(0, 20, 0, 0.8)",
+              borderRadius: "5px",
               padding: "30px",
-              boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
-              color: "white"
-            }}>
-              <div style={{ fontSize: "48px", marginBottom: "10px" }}>🌡️</div>
-              <div style={{ fontSize: "14px", opacity: 0.9, marginBottom: "5px" }}>Temperatura</div>
-              <div style={{ fontSize: "36px", fontWeight: "bold" }}>{sensorData.temperatura}°C</div>
+              boxShadow: "0 0 30px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 255, 65, 0.05)",
+              border: "2px solid #00ff41",
+              transition: "all 0.3s ease",
+              cursor: "pointer"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-5px)";
+              e.currentTarget.style.boxShadow = "0 0 40px rgba(0, 255, 65, 0.5), inset 0 0 30px rgba(0, 255, 65, 0.1)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 0 30px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 255, 65, 0.05)";
+            }}
+            >
+              <div style={{ fontSize: "48px", marginBottom: "10px", filter: "drop-shadow(0 0 10px #00ff41)" }}>🌡️</div>
+              <div style={{ fontSize: "14px", color: "#00ff41", opacity: 0.7, marginBottom: "5px", textTransform: "uppercase", letterSpacing: "1px" }}>Temperatura</div>
+              <div style={{ fontSize: "36px", fontWeight: "bold", color: "#00ff41", textShadow: "0 0 20px #00ff41" }}>{sensorData.temperatura}°C</div>
             </div>
 
             {/* Humedad */}
             <div style={{
-              background: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
-              borderRadius: "20px",
+              background: "rgba(0, 20, 0, 0.8)",
+              borderRadius: "5px",
               padding: "30px",
-              boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
-              color: "white"
-            }}>
-              <div style={{ fontSize: "48px", marginBottom: "10px" }}>💧</div>
-              <div style={{ fontSize: "14px", opacity: 0.9, marginBottom: "5px" }}>Humedad</div>
-              <div style={{ fontSize: "36px", fontWeight: "bold" }}>{sensorData.humedad}%</div>
+              boxShadow: "0 0 30px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 255, 65, 0.05)",
+              border: "2px solid #00ff41",
+              transition: "all 0.3s ease",
+              cursor: "pointer"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-5px)";
+              e.currentTarget.style.boxShadow = "0 0 40px rgba(0, 255, 65, 0.5), inset 0 0 30px rgba(0, 255, 65, 0.1)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 0 30px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 255, 65, 0.05)";
+            }}
+            >
+              <div style={{ fontSize: "48px", marginBottom: "10px", filter: "drop-shadow(0 0 10px #00ff41)" }}>💧</div>
+              <div style={{ fontSize: "14px", color: "#00ff41", opacity: 0.7, marginBottom: "5px", textTransform: "uppercase", letterSpacing: "1px" }}>Humedad</div>
+              <div style={{ fontSize: "36px", fontWeight: "bold", color: "#00ff41", textShadow: "0 0 20px #00ff41" }}>{sensorData.humedad}%</div>
             </div>
 
             {/* Bomba */}
             <div style={{
-              background: sensorData.bomba 
-                ? "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"
-                : "linear-gradient(135deg, #868f96 0%, #596164 100%)",
-              borderRadius: "20px",
+              background: "rgba(0, 20, 0, 0.8)",
+              borderRadius: "5px",
               padding: "30px",
-              boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
-              color: "white"
-            }}>
-              <div style={{ fontSize: "48px", marginBottom: "10px" }}>⚙️</div>
-              <div style={{ fontSize: "14px", opacity: 0.9, marginBottom: "5px" }}>Bomba</div>
-              <div style={{ fontSize: "24px", fontWeight: "bold" }}>
-                {sensorData.bomba ? "Encendida" : "Apagada"}
+              boxShadow: sensorData.bomba 
+                ? "0 0 30px rgba(0, 255, 65, 0.5), inset 0 0 20px rgba(0, 255, 65, 0.1)"
+                : "0 0 30px rgba(255, 0, 64, 0.3), inset 0 0 20px rgba(255, 0, 64, 0.05)",
+              border: sensorData.bomba ? "2px solid #00ff41" : "2px solid #ff0040",
+              transition: "all 0.3s ease",
+              cursor: "pointer"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-5px)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+            }}
+            >
+              <div style={{ 
+                fontSize: "48px", 
+                marginBottom: "10px", 
+                filter: sensorData.bomba ? "drop-shadow(0 0 10px #00ff41)" : "drop-shadow(0 0 10px #ff0040)"
+              }}>⚙️</div>
+              <div style={{ 
+                fontSize: "14px", 
+                color: sensorData.bomba ? "#00ff41" : "#ff0040", 
+                opacity: 0.7, 
+                marginBottom: "5px", 
+                textTransform: "uppercase", 
+                letterSpacing: "1px" 
+              }}>Bomba</div>
+              <div style={{ 
+                fontSize: "24px", 
+                fontWeight: "bold",
+                color: sensorData.bomba ? "#00ff41" : "#ff0040",
+                textShadow: sensorData.bomba ? "0 0 20px #00ff41" : "0 0 20px #ff0040"
+              }}>
+                {sensorData.bomba ? "ENCENDIDA" : "APAGADA"}
               </div>
-              <div style={{ fontSize: "12px", marginTop: "10px", opacity: 0.8 }}>
-                {sensorData.bomba ? `Desde: ${lastOn}` : `Desde: ${lastOff}`}
+              <div style={{ 
+                fontSize: "12px", 
+                marginTop: "10px", 
+                color: sensorData.bomba ? "#00ff41" : "#ff0040",
+                opacity: 0.6 
+              }}>
+                {sensorData.bomba ? `▸ Desde: ${lastOn}` : `▸ Desde: ${lastOff}`}
               </div>
             </div>
 
             {/* Luces UV */}
             <div style={{
-              background: sensorData.luces
-                ? "linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
-                : "linear-gradient(135deg, #868f96 0%, #596164 100%)",
-              borderRadius: "20px",
+              background: "rgba(0, 20, 0, 0.8)",
+              borderRadius: "5px",
               padding: "30px",
-              boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
-              color: "white"
-            }}>
-              <div style={{ fontSize: "48px", marginBottom: "10px" }}>💡</div>
-              <div style={{ fontSize: "14px", opacity: 0.9, marginBottom: "5px" }}>Luces UV</div>
-              <div style={{ fontSize: "24px", fontWeight: "bold" }}>
-                {sensorData.luces ? "Encendidas" : "Apagadas"}
+              boxShadow: sensorData.luces
+                ? "0 0 30px rgba(0, 255, 65, 0.5), inset 0 0 20px rgba(0, 255, 65, 0.1)"
+                : "0 0 30px rgba(255, 0, 64, 0.3), inset 0 0 20px rgba(255, 0, 64, 0.05)",
+              border: sensorData.luces ? "2px solid #00ff41" : "2px solid #ff0040",
+              transition: "all 0.3s ease",
+              cursor: "pointer"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-5px)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+            }}
+            >
+              <div style={{ 
+                fontSize: "48px", 
+                marginBottom: "10px",
+                filter: sensorData.luces ? "drop-shadow(0 0 10px #00ff41)" : "drop-shadow(0 0 10px #ff0040)"
+              }}>💡</div>
+              <div style={{ 
+                fontSize: "14px", 
+                color: sensorData.luces ? "#00ff41" : "#ff0040", 
+                opacity: 0.7, 
+                marginBottom: "5px", 
+                textTransform: "uppercase", 
+                letterSpacing: "1px" 
+              }}>Luces UV</div>
+              <div style={{ 
+                fontSize: "24px", 
+                fontWeight: "bold",
+                color: sensorData.luces ? "#00ff41" : "#ff0040",
+                textShadow: sensorData.luces ? "0 0 20px #00ff41" : "0 0 20px #ff0040"
+              }}>
+                {sensorData.luces ? "ENCENDIDAS" : "APAGADAS"}
               </div>
-              <div style={{ fontSize: "12px", marginTop: "10px", opacity: 0.8 }}>
-                {sensorData.luces ? `Desde: ${lastLuzOn}` : `Desde: ${lastLuzOff}`}
+              <div style={{ 
+                fontSize: "12px", 
+                marginTop: "10px", 
+                color: sensorData.luces ? "#00ff41" : "#ff0040",
+                opacity: 0.6 
+              }}>
+                {sensorData.luces ? `▸ Desde: ${lastLuzOn}` : `▸ Desde: ${lastLuzOff}`}
               </div>
             </div>
           </div>
@@ -335,26 +452,34 @@ function App() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px" }}>
             {/* Control Bomba */}
             <div style={{
-              background: "white",
-              borderRadius: "20px",
+              background: "rgba(0, 20, 0, 0.8)",
+              borderRadius: "5px",
               padding: "30px",
-              boxShadow: "0 10px 40px rgba(0,0,0,0.1)"
+              boxShadow: "0 0 30px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 255, 65, 0.05)",
+              border: "2px solid #00ff41",
+              transition: "all 0.3s ease"
             }}>
-              <h2 style={{ marginTop: 0, color: "#333", fontSize: "24px" }}>🚰 Control de Bomba</h2>
+              <h2 style={{ marginTop: 0, color: "#00ff41", fontSize: "24px", textShadow: "0 0 10px #00ff41", textTransform: "uppercase", letterSpacing: "2px" }}>🚰 Control de Bomba</h2>
               <div style={{ 
-                background: sensorData.bomba ? "#d4edda" : "#f8d7da",
+                background: sensorData.bomba ? "rgba(0, 255, 65, 0.2)" : "rgba(255, 0, 64, 0.2)",
                 padding: "20px",
-                borderRadius: "15px",
+                borderRadius: "5px",
                 marginBottom: "20px",
-                textAlign: "center"
+                textAlign: "center",
+                border: sensorData.bomba ? "1px solid #00ff41" : "1px solid #ff0040",
+                boxShadow: sensorData.bomba ? "0 0 20px rgba(0, 255, 65, 0.3)" : "0 0 20px rgba(255, 0, 64, 0.3)",
+                transition: "all 0.3s ease"
               }}>
-                <div style={{ fontSize: "48px", marginBottom: "10px" }}>⚙️</div>
+                <div style={{ fontSize: "48px", marginBottom: "10px", filter: sensorData.bomba ? "drop-shadow(0 0 10px #00ff41)" : "drop-shadow(0 0 10px #ff0040)" }}>⚙️</div>
                 <div style={{ 
                   fontSize: "20px", 
                   fontWeight: "bold",
-                  color: sensorData.bomba ? "#155724" : "#721c24"
+                  color: sensorData.bomba ? "#00ff41" : "#ff0040",
+                  textShadow: sensorData.bomba ? "0 0 10px #00ff41" : "0 0 10px #ff0040",
+                  textTransform: "uppercase",
+                  letterSpacing: "1px"
                 }}>
-                  {sensorData.bomba ? "Encendida" : "Apagada"}
+                  {sensorData.bomba ? "ENCENDIDA" : "APAGADA"}
                 </div>
               </div>
               <div style={{ display: "flex", gap: "10px" }}>
@@ -363,64 +488,94 @@ function App() {
                   style={{
                     flex: 1,
                     padding: "15px",
-                    border: "none",
-                    borderRadius: "10px",
-                    background: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
-                    color: "white",
+                    border: "2px solid #00ff41",
+                    borderRadius: "5px",
+                    background: "rgba(0, 255, 65, 0.2)",
+                    color: "#00ff41",
                     fontWeight: "600",
                     fontSize: "16px",
                     cursor: "pointer",
-                    transition: "transform 0.2s"
+                    transition: "all 0.3s ease",
+                    textTransform: "uppercase",
+                    letterSpacing: "1px",
+                    boxShadow: "0 0 10px rgba(0, 255, 65, 0.3)"
                   }}
-                  onMouseEnter={(e) => e.target.style.transform = "scale(1.05)"}
-                  onMouseLeave={(e) => e.target.style.transform = "scale(1)"}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = "rgba(0, 255, 65, 0.4)";
+                    e.target.style.boxShadow = "0 0 20px rgba(0, 255, 65, 0.6)";
+                    e.target.style.textShadow = "0 0 10px #00ff41";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = "rgba(0, 255, 65, 0.2)";
+                    e.target.style.boxShadow = "0 0 10px rgba(0, 255, 65, 0.3)";
+                    e.target.style.textShadow = "none";
+                  }}
                 >
-                  ▶️ Encender
+                  ▶ Encender
                 </button>
                 <button
                   onClick={() => publicar("off")}
                   style={{
                     flex: 1,
                     padding: "15px",
-                    border: "none",
-                    borderRadius: "10px",
-                    background: "linear-gradient(135deg, #868f96 0%, #596164 100%)",
-                    color: "white",
+                    border: "2px solid #ff0040",
+                    borderRadius: "5px",
+                    background: "rgba(255, 0, 64, 0.2)",
+                    color: "#ff0040",
                     fontWeight: "600",
                     fontSize: "16px",
                     cursor: "pointer",
-                    transition: "transform 0.2s"
+                    transition: "all 0.3s ease",
+                    textTransform: "uppercase",
+                    letterSpacing: "1px",
+                    boxShadow: "0 0 10px rgba(255, 0, 64, 0.3)"
                   }}
-                  onMouseEnter={(e) => e.target.style.transform = "scale(1.05)"}
-                  onMouseLeave={(e) => e.target.style.transform = "scale(1)"}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = "rgba(255, 0, 64, 0.4)";
+                    e.target.style.boxShadow = "0 0 20px rgba(255, 0, 64, 0.6)";
+                    e.target.style.textShadow = "0 0 10px #ff0040";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = "rgba(255, 0, 64, 0.2)";
+                    e.target.style.boxShadow = "0 0 10px rgba(255, 0, 64, 0.3)";
+                    e.target.style.textShadow = "none";
+                  }}
                 >
-                  ⏸️ Apagar
+                  ⏸ Apagar
                 </button>
               </div>
             </div>
 
             {/* Control Luces */}
             <div style={{
-              background: "white",
-              borderRadius: "20px",
+              background: "rgba(0, 20, 0, 0.8)",
+              borderRadius: "5px",
               padding: "30px",
-              boxShadow: "0 10px 40px rgba(0,0,0,0.1)"
+              boxShadow: "0 0 30px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 255, 65, 0.05)",
+              border: "2px solid #00ff41",
+              transition: "all 0.3s ease"
             }}>
-              <h2 style={{ marginTop: 0, color: "#333", fontSize: "24px" }}>💡 Control de Luces UV</h2>
+              <h2 style={{ marginTop: 0, color: "#00ff41", fontSize: "24px", textShadow: "0 0 10px #00ff41", textTransform: "uppercase", letterSpacing: "2px" }}>💡 Control de Luces UV</h2>
               <div style={{ 
-                background: sensorData.luces ? "#fff3cd" : "#d1ecf1",
+                background: sensorData.luces ? "rgba(0, 255, 65, 0.2)" : "rgba(255, 0, 64, 0.2)",
                 padding: "20px",
-                borderRadius: "15px",
+                borderRadius: "5px",
                 marginBottom: "20px",
-                textAlign: "center"
+                textAlign: "center",
+                border: sensorData.luces ? "1px solid #00ff41" : "1px solid #ff0040",
+                boxShadow: sensorData.luces ? "0 0 20px rgba(0, 255, 65, 0.3)" : "0 0 20px rgba(255, 0, 64, 0.3)",
+                transition: "all 0.3s ease"
               }}>
-                <div style={{ fontSize: "48px", marginBottom: "10px" }}>💡</div>
+                <div style={{ fontSize: "48px", marginBottom: "10px", filter: sensorData.luces ? "drop-shadow(0 0 10px #00ff41)" : "drop-shadow(0 0 10px #ff0040)" }}>💡</div>
                 <div style={{ 
                   fontSize: "20px", 
                   fontWeight: "bold",
-                  color: sensorData.luces ? "#856404" : "#0c5460"
+                  color: sensorData.luces ? "#00ff41" : "#ff0040",
+                  textShadow: sensorData.luces ? "0 0 10px #00ff41" : "0 0 10px #ff0040",
+                  textTransform: "uppercase",
+                  letterSpacing: "1px"
                 }}>
-                  {sensorData.luces ? "Encendidas" : "Apagadas"}
+                  {sensorData.luces ? "ENCENDIDAS" : "APAGADAS"}
                 </div>
               </div>
               <div style={{ display: "flex", gap: "10px" }}>
@@ -429,17 +584,28 @@ function App() {
                   style={{
                     flex: 1,
                     padding: "15px",
-                    border: "none",
-                    borderRadius: "10px",
-                    background: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
-                    color: "white",
+                    border: "2px solid #00ff41",
+                    borderRadius: "5px",
+                    background: "rgba(0, 255, 65, 0.2)",
+                    color: "#00ff41",
                     fontWeight: "600",
                     fontSize: "16px",
                     cursor: "pointer",
-                    transition: "transform 0.2s"
+                    transition: "all 0.3s ease",
+                    textTransform: "uppercase",
+                    letterSpacing: "1px",
+                    boxShadow: "0 0 10px rgba(0, 255, 65, 0.3)"
                   }}
-                  onMouseEnter={(e) => e.target.style.transform = "scale(1.05)"}
-                  onMouseLeave={(e) => e.target.style.transform = "scale(1)"}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = "rgba(0, 255, 65, 0.4)";
+                    e.target.style.boxShadow = "0 0 20px rgba(0, 255, 65, 0.6)";
+                    e.target.style.textShadow = "0 0 10px #00ff41";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = "rgba(0, 255, 65, 0.2)";
+                    e.target.style.boxShadow = "0 0 10px rgba(0, 255, 65, 0.3)";
+                    e.target.style.textShadow = "none";
+                  }}
                 >
                   🌞 Encender
                 </button>
@@ -448,17 +614,28 @@ function App() {
                   style={{
                     flex: 1,
                     padding: "15px",
-                    border: "none",
-                    borderRadius: "10px",
-                    background: "linear-gradient(135deg, #868f96 0%, #596164 100%)",
-                    color: "white",
+                    border: "2px solid #ff0040",
+                    borderRadius: "5px",
+                    background: "rgba(255, 0, 64, 0.2)",
+                    color: "#ff0040",
                     fontWeight: "600",
                     fontSize: "16px",
                     cursor: "pointer",
-                    transition: "transform 0.2s"
+                    transition: "all 0.3s ease",
+                    textTransform: "uppercase",
+                    letterSpacing: "1px",
+                    boxShadow: "0 0 10px rgba(255, 0, 64, 0.3)"
                   }}
-                  onMouseEnter={(e) => e.target.style.transform = "scale(1.05)"}
-                  onMouseLeave={(e) => e.target.style.transform = "scale(1)"}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = "rgba(255, 0, 64, 0.4)";
+                    e.target.style.boxShadow = "0 0 20px rgba(255, 0, 64, 0.6)";
+                    e.target.style.textShadow = "0 0 10px #ff0040";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = "rgba(255, 0, 64, 0.2)";
+                    e.target.style.boxShadow = "0 0 10px rgba(255, 0, 64, 0.3)";
+                    e.target.style.textShadow = "none";
+                  }}
                 >
                   🌙 Apagar
                 </button>
@@ -472,14 +649,16 @@ function App() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))", gap: "20px" }}>
             {/* Intervalos de Riego */}
             <div style={{
-              background: "white",
-              borderRadius: "20px",
+              background: "rgba(0, 20, 0, 0.8)",
+              borderRadius: "5px",
               padding: "30px",
-              boxShadow: "0 10px 40px rgba(0,0,0,0.1)"
+              boxShadow: "0 0 30px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 255, 65, 0.05)",
+              border: "2px solid #00ff41",
+              transition: "all 0.3s ease"
             }}>
-              <h2 style={{ marginTop: 0, color: "#333", fontSize: "24px" }}>⚙️ Intervalos de Riego</h2>
+              <h2 style={{ marginTop: 0, color: "#00ff41", fontSize: "24px", textShadow: "0 0 10px #00ff41", textTransform: "uppercase", letterSpacing: "2px" }}>⚙️ Intervalos de Riego</h2>
               <div style={{ marginBottom: "20px" }}>
-                <label style={{ display: "block", marginBottom: "10px", color: "#666", fontWeight: "600" }}>
+                <label style={{ display: "block", marginBottom: "10px", color: "#00ff41", fontWeight: "600", textTransform: "uppercase", letterSpacing: "1px", fontSize: "14px" }}>
                   ⏱️ Minutos encendida:
                 </label>
                 <input
@@ -489,15 +668,27 @@ function App() {
                   style={{
                     width: "100%",
                     padding: "15px",
-                    border: "2px solid #e0e0e0",
-                    borderRadius: "10px",
+                    border: "2px solid #00ff41",
+                    borderRadius: "5px",
                     fontSize: "16px",
-                    boxSizing: "border-box"
+                    boxSizing: "border-box",
+                    background: "rgba(0, 0, 0, 0.6)",
+                    color: "#00ff41",
+                    fontWeight: "600",
+                    transition: "all 0.3s ease"
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.boxShadow = "0 0 20px rgba(0, 255, 65, 0.5)";
+                    e.target.style.background = "rgba(0, 0, 0, 0.8)";
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.boxShadow = "none";
+                    e.target.style.background = "rgba(0, 0, 0, 0.6)";
                   }}
                 />
               </div>
               <div style={{ marginBottom: "20px" }}>
-                <label style={{ display: "block", marginBottom: "10px", color: "#666", fontWeight: "600" }}>
+                <label style={{ display: "block", marginBottom: "10px", color: "#00ff41", fontWeight: "600", textTransform: "uppercase", letterSpacing: "1px", fontSize: "14px" }}>
                   ⏸️ Minutos apagada:
                 </label>
                 <input
@@ -507,10 +698,22 @@ function App() {
                   style={{
                     width: "100%",
                     padding: "15px",
-                    border: "2px solid #e0e0e0",
-                    borderRadius: "10px",
+                    border: "2px solid #00ff41",
+                    borderRadius: "5px",
                     fontSize: "16px",
-                    boxSizing: "border-box"
+                    boxSizing: "border-box",
+                    background: "rgba(0, 0, 0, 0.6)",
+                    color: "#00ff41",
+                    fontWeight: "600",
+                    transition: "all 0.3s ease"
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.boxShadow = "0 0 20px rgba(0, 255, 65, 0.5)";
+                    e.target.style.background = "rgba(0, 0, 0, 0.8)";
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.boxShadow = "none";
+                    e.target.style.background = "rgba(0, 0, 0, 0.6)";
                   }}
                 />
               </div>
@@ -519,17 +722,28 @@ function App() {
                 style={{
                   width: "100%",
                   padding: "15px",
-                  border: "none",
-                  borderRadius: "10px",
-                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                  color: "white",
+                  border: "2px solid #00ff41",
+                  borderRadius: "5px",
+                  background: "rgba(0, 255, 65, 0.2)",
+                  color: "#00ff41",
                   fontWeight: "600",
                   fontSize: "16px",
                   cursor: "pointer",
-                  transition: "transform 0.2s"
+                  transition: "all 0.3s ease",
+                  textTransform: "uppercase",
+                  letterSpacing: "1px",
+                  boxShadow: "0 0 10px rgba(0, 255, 65, 0.3)"
                 }}
-                onMouseEnter={(e) => e.target.style.transform = "scale(1.02)"}
-                onMouseLeave={(e) => e.target.style.transform = "scale(1)"}
+                onMouseEnter={(e) => {
+                  e.target.style.background = "rgba(0, 255, 65, 0.4)";
+                  e.target.style.boxShadow = "0 0 20px rgba(0, 255, 65, 0.6)";
+                  e.target.style.textShadow = "0 0 10px #00ff41";
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = "rgba(0, 255, 65, 0.2)";
+                  e.target.style.boxShadow = "0 0 10px rgba(0, 255, 65, 0.3)";
+                  e.target.style.textShadow = "none";
+                }}
               >
                 💾 Guardar Configuración
               </button>
@@ -537,14 +751,16 @@ function App() {
 
             {/* Horario Luces UV */}
             <div style={{
-              background: "white",
-              borderRadius: "20px",
+              background: "rgba(0, 20, 0, 0.8)",
+              borderRadius: "5px",
               padding: "30px",
-              boxShadow: "0 10px 40px rgba(0,0,0,0.1)"
+              boxShadow: "0 0 30px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 255, 65, 0.05)",
+              border: "2px solid #00ff41",
+              transition: "all 0.3s ease"
             }}>
-              <h2 style={{ marginTop: 0, color: "#333", fontSize: "24px" }}>🌗 Horario de Luces UV</h2>
+              <h2 style={{ marginTop: 0, color: "#00ff41", fontSize: "24px", textShadow: "0 0 10px #00ff41", textTransform: "uppercase", letterSpacing: "2px" }}>🌗 Horario de Luces UV</h2>
               <div style={{ marginBottom: "20px" }}>
-                <label style={{ display: "block", marginBottom: "10px", color: "#666", fontWeight: "600" }}>
+                <label style={{ display: "block", marginBottom: "10px", color: "#00ff41", fontWeight: "600", textTransform: "uppercase", letterSpacing: "1px", fontSize: "14px" }}>
                   🌞 Hora de encendido (0-23):
                 </label>
                 <input
@@ -556,15 +772,27 @@ function App() {
                   style={{
                     width: "100%",
                     padding: "15px",
-                    border: "2px solid #e0e0e0",
-                    borderRadius: "10px",
+                    border: "2px solid #00ff41",
+                    borderRadius: "5px",
                     fontSize: "16px",
-                    boxSizing: "border-box"
+                    boxSizing: "border-box",
+                    background: "rgba(0, 0, 0, 0.6)",
+                    color: "#00ff41",
+                    fontWeight: "600",
+                    transition: "all 0.3s ease"
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.boxShadow = "0 0 20px rgba(0, 255, 65, 0.5)";
+                    e.target.style.background = "rgba(0, 0, 0, 0.8)";
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.boxShadow = "none";
+                    e.target.style.background = "rgba(0, 0, 0, 0.6)";
                   }}
                 />
               </div>
               <div style={{ marginBottom: "20px" }}>
-                <label style={{ display: "block", marginBottom: "10px", color: "#666", fontWeight: "600" }}>
+                <label style={{ display: "block", marginBottom: "10px", color: "#00ff41", fontWeight: "600", textTransform: "uppercase", letterSpacing: "1px", fontSize: "14px" }}>
                   🌙 Hora de apagado (0-23):
                 </label>
                 <input
@@ -576,10 +804,22 @@ function App() {
                   style={{
                     width: "100%",
                     padding: "15px",
-                    border: "2px solid #e0e0e0",
-                    borderRadius: "10px",
+                    border: "2px solid #00ff41",
+                    borderRadius: "5px",
                     fontSize: "16px",
-                    boxSizing: "border-box"
+                    boxSizing: "border-box",
+                    background: "rgba(0, 0, 0, 0.6)",
+                    color: "#00ff41",
+                    fontWeight: "600",
+                    transition: "all 0.3s ease"
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.boxShadow = "0 0 20px rgba(0, 255, 65, 0.5)";
+                    e.target.style.background = "rgba(0, 0, 0, 0.8)";
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.boxShadow = "none";
+                    e.target.style.background = "rgba(0, 0, 0, 0.6)";
                   }}
                 />
               </div>
@@ -588,17 +828,28 @@ function App() {
                 style={{
                   width: "100%",
                   padding: "15px",
-                  border: "none",
-                  borderRadius: "10px",
-                  background: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
-                  color: "white",
+                  border: "2px solid #00ff41",
+                  borderRadius: "5px",
+                  background: "rgba(0, 255, 65, 0.2)",
+                  color: "#00ff41",
                   fontWeight: "600",
                   fontSize: "16px",
                   cursor: "pointer",
-                  transition: "transform 0.2s"
+                  transition: "all 0.3s ease",
+                  textTransform: "uppercase",
+                  letterSpacing: "1px",
+                  boxShadow: "0 0 10px rgba(0, 255, 65, 0.3)"
                 }}
-                onMouseEnter={(e) => e.target.style.transform = "scale(1.02)"}
-                onMouseLeave={(e) => e.target.style.transform = "scale(1)"}
+                onMouseEnter={(e) => {
+                  e.target.style.background = "rgba(0, 255, 65, 0.4)";
+                  e.target.style.boxShadow = "0 0 20px rgba(0, 255, 65, 0.6)";
+                  e.target.style.textShadow = "0 0 10px #00ff41";
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = "rgba(0, 255, 65, 0.2)";
+                  e.target.style.boxShadow = "0 0 10px rgba(0, 255, 65, 0.3)";
+                  e.target.style.textShadow = "none";
+                }}
               >
                 💾 Guardar Horario
               </button>
@@ -609,53 +860,65 @@ function App() {
         {/* Historial Tab */}
         {activeTab === "historial" && (
           <div style={{
-            background: "white",
-            borderRadius: "20px",
+            background: "rgba(0, 20, 0, 0.8)",
+            borderRadius: "5px",
             padding: "30px",
-            boxShadow: "0 10px 40px rgba(0,0,0,0.1)"
+            boxShadow: "0 0 30px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 255, 65, 0.05)",
+            border: "2px solid #00ff41",
+            transition: "all 0.3s ease"
           }}>
-            <h2 style={{ marginTop: 0, color: "#333", fontSize: "24px" }}>📋 Historial de Eventos de Luces UV</h2>
+            <h2 style={{ marginTop: 0, color: "#00ff41", fontSize: "24px", textShadow: "0 0 10px #00ff41", textTransform: "uppercase", letterSpacing: "2px" }}>📋 Historial de Eventos</h2>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "white" }}>
-                    <th style={{ padding: "15px", textAlign: "left", borderRadius: "10px 0 0 0" }}>🕒 Hora</th>
-                    <th style={{ padding: "15px", textAlign: "left" }}>🔁 Modo</th>
-                    <th style={{ padding: "15px", textAlign: "left", borderRadius: "0 10px 0 0" }}>📝 Descripción</th>
+                  <tr style={{ background: "rgba(0, 255, 65, 0.2)", color: "#00ff41" }}>
+                    <th style={{ padding: "15px", textAlign: "left", border: "1px solid #00ff41", textTransform: "uppercase", letterSpacing: "1px", fontSize: "14px" }}>🕒 Hora</th>
+                    <th style={{ padding: "15px", textAlign: "left", border: "1px solid #00ff41", textTransform: "uppercase", letterSpacing: "1px", fontSize: "14px" }}>🔁 Modo</th>
+                    <th style={{ padding: "15px", textAlign: "left", border: "1px solid #00ff41", textTransform: "uppercase", letterSpacing: "1px", fontSize: "14px" }}>📝 Descripción</th>
                   </tr>
                 </thead>
                 <tbody>
                   {eventosLuz.length === 0 ? (
                     <tr>
-                      <td colSpan="3" style={{ padding: "30px", textAlign: "center", color: "#999" }}>
+                      <td colSpan="3" style={{ padding: "30px", textAlign: "center", color: "#00ff41", opacity: 0.5, border: "1px solid rgba(0, 255, 65, 0.3)" }}>
                         Sin registros disponibles
                       </td>
                     </tr>
                   ) : (
                     eventosLuz.map((evento, i) => (
                       <tr key={i} style={{ 
-                        borderBottom: "1px solid #f0f0f0",
-                        transition: "background 0.2s"
+                        borderBottom: "1px solid rgba(0, 255, 65, 0.3)",
+                        transition: "all 0.3s ease",
+                        background: "rgba(0, 0, 0, 0.3)"
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = "#f8f9fa"}
-                      onMouseLeave={(e) => e.currentTarget.style.background = "white"}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "rgba(0, 255, 65, 0.1)";
+                        e.currentTarget.style.boxShadow = "0 0 10px rgba(0, 255, 65, 0.3)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "rgba(0, 0, 0, 0.3)";
+                        e.currentTarget.style.boxShadow = "none";
+                      }}
                       >
-                        <td style={{ padding: "15px" }}>
+                        <td style={{ padding: "15px", color: "#00ff41", border: "1px solid rgba(0, 255, 65, 0.3)" }}>
                           {evento.fecha ? new Date(evento.fecha).toLocaleString() : "--"}
                         </td>
-                        <td style={{ padding: "15px" }}>
+                        <td style={{ padding: "15px", border: "1px solid rgba(0, 255, 65, 0.3)" }}>
                           <span style={{
                             padding: "5px 15px",
-                            borderRadius: "20px",
-                            background: "#e3f2fd",
-                            color: "#1976d2",
+                            borderRadius: "5px",
+                            background: "rgba(0, 255, 65, 0.2)",
+                            color: "#00ff41",
                             fontSize: "14px",
-                            fontWeight: "600"
+                            fontWeight: "600",
+                            border: "1px solid #00ff41",
+                            textTransform: "uppercase",
+                            letterSpacing: "1px"
                           }}>
                             {evento.modo}
                           </span>
                         </td>
-                        <td style={{ padding: "15px", color: "#666" }}>{evento.descripcion}</td>
+                        <td style={{ padding: "15px", color: "#00ff41", opacity: 0.8, border: "1px solid rgba(0, 255, 65, 0.3)" }}>{evento.descripcion}</td>
                       </tr>
                     ))
                   )}
@@ -672,23 +935,60 @@ function App() {
           position: "fixed",
           bottom: "30px",
           right: "30px",
-          background: "white",
+          background: "rgba(0, 20, 0, 0.95)",
           padding: "20px 30px",
-          borderRadius: "15px",
-          boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+          borderRadius: "5px",
+          boxShadow: "0 0 30px rgba(0, 255, 65, 0.5), inset 0 0 20px rgba(0, 255, 65, 0.1)",
+          border: "2px solid #00ff41",
           animation: "slideIn 0.3s ease-out",
           zIndex: 1000,
           fontWeight: "600",
-          color: "#333"
+          color: "#00ff41",
+          textShadow: "0 0 10px #00ff41",
+          letterSpacing: "1px"
         }}>
           {statusMsg}
         </div>
       )}
 
+      {/* Footer */}
+      <div style={{
+        maxWidth: "1200px",
+        margin: "40px auto 0 auto",
+        padding: "20px",
+        textAlign: "center",
+        borderTop: "1px solid rgba(0, 255, 65, 0.3)"
+      }}>
+        <p style={{ 
+          color: "#00ff41", 
+          fontSize: "14px", 
+          margin: "5px 0",
+          opacity: 0.7,
+          letterSpacing: "1px"
+        }}>
+          <strong style={{ textShadow: "0 0 10px #00ff41" }}>AGROCOLMETEO</strong> · Sistema de Monitoreo Hidropónico
+        </p>
+        <p style={{ 
+          color: "#00ff41", 
+          fontSize: "12px", 
+          margin: "5px 0",
+          opacity: 0.5,
+          fontStyle: "italic"
+        }}>
+          Desarrollado por Bryan R. © {new Date().getFullYear()}
+        </p>
+      </div>
+
       <style>{`
         @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
+          0%, 100% { 
+            opacity: 1;
+            transform: scale(1);
+          }
+          50% { 
+            opacity: 0.3;
+            transform: scale(0.8);
+          }
         }
         @keyframes slideIn {
           from {
@@ -700,12 +1000,45 @@ function App() {
             opacity: 1;
           }
         }
+        @keyframes glow {
+          0%, 100% {
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+          }
+          50% {
+            box-shadow: 0 0 40px rgba(0, 255, 65, 0.6);
+          }
+        }
         * {
           box-sizing: border-box;
         }
         body {
           margin: 0;
           padding: 0;
+          overflow-x: hidden;
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+          opacity: 1;
+          filter: invert(1) hue-rotate(90deg);
+        }
+        ::selection {
+          background: rgba(0, 255, 65, 0.3);
+          color: #00ff41;
+        }
+        ::-webkit-scrollbar {
+          width: 10px;
+          height: 10px;
+        }
+        ::-webkit-scrollbar-track {
+          background: rgba(0, 0, 0, 0.5);
+          border: 1px solid rgba(0, 255, 65, 0.3);
+        }
+        ::-webkit-scrollbar-thumb {
+          background: rgba(0, 255, 65, 0.5);
+          border-radius: 5px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          background: rgba(0, 255, 65, 0.8);
         }
       `}</style>
     </div>
