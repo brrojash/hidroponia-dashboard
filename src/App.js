@@ -335,7 +335,8 @@ function App() {
                 fontSize: "48px", 
                 marginBottom: "10px", 
                 filter: "drop-shadow(0 0 10px #00ff41)",
-                animation: sensorData.temperatura !== "--" ? "float 3s ease-in-out infinite" : "none"
+                animation: "float 3s ease-in-out infinite, pulse 4s ease-in-out infinite",
+                display: "inline-block"
               }}>🌡️</div>
               <div style={{ fontSize: "14px", color: "#00ff41", opacity: 0.7, marginBottom: "5px", textTransform: "uppercase", letterSpacing: "1px" }}>Temperatura</div>
               <div style={{ fontSize: "36px", fontWeight: "bold", color: "#00ff41", textShadow: "0 0 20px #00ff41" }}>{sensorData.temperatura}°C</div>
@@ -364,7 +365,8 @@ function App() {
                 fontSize: "48px", 
                 marginBottom: "10px", 
                 filter: "drop-shadow(0 0 10px #00ff41)",
-                animation: sensorData.humedad !== "--" ? "bounce 2s ease-in-out infinite" : "none"
+                animation: "bounce 2s ease-in-out infinite, shimmer 3s ease-in-out infinite",
+                display: "inline-block"
               }}>💧</div>
               <div style={{ fontSize: "14px", color: "#00ff41", opacity: 0.7, marginBottom: "5px", textTransform: "uppercase", letterSpacing: "1px" }}>Humedad</div>
               <div style={{ fontSize: "36px", fontWeight: "bold", color: "#00ff41", textShadow: "0 0 20px #00ff41" }}>{sensorData.humedad}%</div>
@@ -380,7 +382,9 @@ function App() {
                 : "0 0 30px rgba(255, 0, 64, 0.3), inset 0 0 20px rgba(255, 0, 64, 0.05)",
               border: sensorData.bomba ? "2px solid #00ff41" : "2px solid #ff0040",
               transition: "all 0.3s ease",
-              cursor: "pointer"
+              cursor: "pointer",
+              position: "relative",
+              overflow: "hidden"
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = "translateY(-5px)";
@@ -389,12 +393,60 @@ function App() {
               e.currentTarget.style.transform = "translateY(0)";
             }}
             >
+              {/* Efecto de cascada cuando está encendida */}
+              {sensorData.bomba && (
+                <>
+                  <div style={{
+                    position: "absolute",
+                    top: 0,
+                    left: "20%",
+                    width: "2px",
+                    height: "100%",
+                    background: "linear-gradient(180deg, transparent, #00ff41, transparent)",
+                    animation: "waterfall 1.5s linear infinite",
+                    opacity: 0.6
+                  }}></div>
+                  <div style={{
+                    position: "absolute",
+                    top: 0,
+                    left: "40%",
+                    width: "2px",
+                    height: "100%",
+                    background: "linear-gradient(180deg, transparent, #00ff41, transparent)",
+                    animation: "waterfall 1.5s linear infinite 0.3s",
+                    opacity: 0.4
+                  }}></div>
+                  <div style={{
+                    position: "absolute",
+                    top: 0,
+                    left: "60%",
+                    width: "2px",
+                    height: "100%",
+                    background: "linear-gradient(180deg, transparent, #00ff41, transparent)",
+                    animation: "waterfall 1.5s linear infinite 0.6s",
+                    opacity: 0.5
+                  }}></div>
+                  <div style={{
+                    position: "absolute",
+                    top: 0,
+                    left: "80%",
+                    width: "2px",
+                    height: "100%",
+                    background: "linear-gradient(180deg, transparent, #00ff41, transparent)",
+                    animation: "waterfall 1.5s linear infinite 0.9s",
+                    opacity: 0.3
+                  }}></div>
+                </>
+              )}
+              
               <div style={{ 
                 fontSize: "48px", 
                 marginBottom: "10px", 
                 filter: sensorData.bomba ? "drop-shadow(0 0 10px #00ff41)" : "drop-shadow(0 0 10px #ff0040)",
-                animation: sensorData.bomba ? "spin 2s linear infinite" : "none",
-                display: "inline-block"
+                animation: sensorData.bomba ? "spin 2s linear infinite, breathe 2s ease-in-out infinite" : "wobble 3s ease-in-out infinite",
+                display: "inline-block",
+                position: "relative",
+                zIndex: 1
               }}>⚙️</div>
               <div style={{ 
                 fontSize: "14px", 
@@ -433,7 +485,9 @@ function App() {
                 : "0 0 30px rgba(255, 0, 64, 0.3), inset 0 0 20px rgba(255, 0, 64, 0.05)",
               border: sensorData.luces ? "2px solid #00ff41" : "2px solid #ff0040",
               transition: "all 0.3s ease",
-              cursor: "pointer"
+              cursor: "pointer",
+              position: "relative",
+              overflow: "visible"
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = "translateY(-5px)";
@@ -442,12 +496,75 @@ function App() {
               e.currentTarget.style.transform = "translateY(0)";
             }}
             >
+              {/* Efecto de luciérnagas cuando está encendida */}
+              {sensorData.luces && (
+                <>
+                  <div style={{
+                    position: "absolute",
+                    top: "30%",
+                    left: "20%",
+                    width: "4px",
+                    height: "4px",
+                    borderRadius: "50%",
+                    background: "#00ff41",
+                    boxShadow: "0 0 10px #00ff41",
+                    animation: "firefly1 3s ease-in-out infinite"
+                  }}></div>
+                  <div style={{
+                    position: "absolute",
+                    top: "50%",
+                    right: "15%",
+                    width: "3px",
+                    height: "3px",
+                    borderRadius: "50%",
+                    background: "#00ff41",
+                    boxShadow: "0 0 8px #00ff41",
+                    animation: "firefly2 4s ease-in-out infinite"
+                  }}></div>
+                  <div style={{
+                    position: "absolute",
+                    top: "25%",
+                    right: "25%",
+                    width: "5px",
+                    height: "5px",
+                    borderRadius: "50%",
+                    background: "#00ff41",
+                    boxShadow: "0 0 12px #00ff41",
+                    animation: "firefly3 3.5s ease-in-out infinite"
+                  }}></div>
+                  <div style={{
+                    position: "absolute",
+                    bottom: "30%",
+                    left: "15%",
+                    width: "4px",
+                    height: "4px",
+                    borderRadius: "50%",
+                    background: "#00ff41",
+                    boxShadow: "0 0 10px #00ff41",
+                    animation: "firefly4 4.5s ease-in-out infinite"
+                  }}></div>
+                  <div style={{
+                    position: "absolute",
+                    top: "40%",
+                    left: "70%",
+                    width: "3px",
+                    height: "3px",
+                    borderRadius: "50%",
+                    background: "#00ff41",
+                    boxShadow: "0 0 8px #00ff41",
+                    animation: "firefly5 3.2s ease-in-out infinite"
+                  }}></div>
+                </>
+              )}
+              
               <div style={{ 
                 fontSize: "48px", 
                 marginBottom: "10px",
                 filter: sensorData.luces ? "drop-shadow(0 0 15px #00ff41)" : "drop-shadow(0 0 10px #ff0040)",
-                animation: sensorData.luces ? "lightPulse 1.5s ease-in-out infinite" : "none",
-                display: "inline-block"
+                animation: sensorData.luces ? "lightPulse 1.5s ease-in-out infinite" : "swing 3s ease-in-out infinite",
+                display: "inline-block",
+                position: "relative",
+                zIndex: 1
               }}>💡</div>
               <div style={{ 
                 fontSize: "14px", 
@@ -1031,8 +1148,8 @@ function App() {
             transform: scale(1);
           }
           50% { 
-            opacity: 0.3;
-            transform: scale(0.8);
+            opacity: 0.8;
+            transform: scale(1.05);
           }
         }
         @keyframes slideIn {
@@ -1095,12 +1212,147 @@ function App() {
             transform: translateY(-8px);
           }
         }
+        @keyframes shimmer {
+          0%, 100% {
+            filter: drop-shadow(0 0 10px #00ff41) brightness(1);
+          }
+          50% {
+            filter: drop-shadow(0 0 15px #00ff41) brightness(1.2);
+          }
+        }
         @keyframes scanlines {
           0% {
             transform: translateY(0);
           }
           100% {
             transform: translateY(4px);
+          }
+        }
+        @keyframes waterfall {
+          0% {
+            transform: translateY(-100%);
+            opacity: 0;
+          }
+          50% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(200%);
+            opacity: 0;
+          }
+        }
+        @keyframes breathe {
+          0%, 100% {
+            transform: rotate(0deg) scale(1);
+          }
+          50% {
+            transform: rotate(180deg) scale(1.05);
+          }
+        }
+        @keyframes wobble {
+          0%, 100% {
+            transform: rotate(-5deg);
+          }
+          50% {
+            transform: rotate(5deg);
+          }
+        }
+        @keyframes swing {
+          0%, 100% {
+            transform: rotate(-3deg);
+          }
+          50% {
+            transform: rotate(3deg);
+          }
+        }
+        @keyframes firefly1 {
+          0%, 100% {
+            transform: translate(0, 0);
+            opacity: 0.3;
+          }
+          25% {
+            transform: translate(-20px, -15px);
+            opacity: 1;
+          }
+          50% {
+            transform: translate(-10px, -30px);
+            opacity: 0.5;
+          }
+          75% {
+            transform: translate(10px, -20px);
+            opacity: 0.8;
+          }
+        }
+        @keyframes firefly2 {
+          0%, 100% {
+            transform: translate(0, 0);
+            opacity: 0.4;
+          }
+          25% {
+            transform: translate(15px, -20px);
+            opacity: 0.9;
+          }
+          50% {
+            transform: translate(25px, -10px);
+            opacity: 0.6;
+          }
+          75% {
+            transform: translate(10px, -25px);
+            opacity: 1;
+          }
+        }
+        @keyframes firefly3 {
+          0%, 100% {
+            transform: translate(0, 0);
+            opacity: 0.5;
+          }
+          33% {
+            transform: translate(-15px, 20px);
+            opacity: 1;
+          }
+          66% {
+            transform: translate(10px, 15px);
+            opacity: 0.7;
+          }
+        }
+        @keyframes firefly4 {
+          0%, 100% {
+            transform: translate(0, 0);
+            opacity: 0.6;
+          }
+          25% {
+            transform: translate(-10px, 15px);
+            opacity: 0.8;
+          }
+          50% {
+            transform: translate(-20px, 5px);
+            opacity: 1;
+          }
+          75% {
+            transform: translate(-15px, 20px);
+            opacity: 0.4;
+          }
+        }
+        @keyframes firefly5 {
+          0%, 100% {
+            transform: translate(0, 0);
+            opacity: 0.3;
+          }
+          20% {
+            transform: translate(10px, -10px);
+            opacity: 0.9;
+          }
+          40% {
+            transform: translate(20px, -5px);
+            opacity: 1;
+          }
+          60% {
+            transform: translate(15px, -15px);
+            opacity: 0.6;
+          }
+          80% {
+            transform: translate(5px, -8px);
+            opacity: 0.8;
           }
         }
         * {
