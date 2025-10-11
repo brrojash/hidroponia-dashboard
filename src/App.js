@@ -182,6 +182,101 @@ function App() {
       position: "relative",
       overflow: "hidden"
     }}>
+      {/* Motos de Tron - Líneas horizontales */}
+      <div style={{
+        position: "fixed",
+        top: "15%",
+        left: 0,
+        width: "100%",
+        height: "2px",
+        background: "linear-gradient(90deg, transparent, #00ff41, transparent)",
+        boxShadow: "0 0 20px #00ff41",
+        animation: "bike1 8s linear infinite",
+        pointerEvents: "none",
+        zIndex: 0
+      }}></div>
+      
+      <div style={{
+        position: "fixed",
+        top: "35%",
+        left: 0,
+        width: "100%",
+        height: "3px",
+        background: "linear-gradient(90deg, transparent, #00ff41, #00ff41, transparent)",
+        boxShadow: "0 0 30px #00ff41",
+        animation: "bike2 6s linear infinite",
+        pointerEvents: "none",
+        zIndex: 0
+      }}></div>
+      
+      <div style={{
+        position: "fixed",
+        top: "55%",
+        right: 0,
+        width: "100%",
+        height: "2px",
+        background: "linear-gradient(90deg, transparent, #00ff41, transparent)",
+        boxShadow: "0 0 15px #00ff41",
+        animation: "bike3 10s linear infinite reverse",
+        pointerEvents: "none",
+        zIndex: 0
+      }}></div>
+      
+      <div style={{
+        position: "fixed",
+        top: "75%",
+        left: 0,
+        width: "100%",
+        height: "2px",
+        background: "linear-gradient(90deg, transparent, rgba(0, 255, 65, 0.7), transparent)",
+        boxShadow: "0 0 25px #00ff41",
+        animation: "bike4 7s linear infinite",
+        pointerEvents: "none",
+        zIndex: 0
+      }}></div>
+      
+      <div style={{
+        position: "fixed",
+        top: "90%",
+        right: 0,
+        width: "100%",
+        height: "3px",
+        background: "linear-gradient(90deg, transparent, #00ff41, transparent)",
+        boxShadow: "0 0 20px #00ff41",
+        animation: "bike5 9s linear infinite reverse",
+        pointerEvents: "none",
+        zIndex: 0
+      }}></div>
+
+      {/* Motos verticales ocasionales */}
+      <div style={{
+        position: "fixed",
+        left: "20%",
+        top: 0,
+        width: "2px",
+        height: "100%",
+        background: "linear-gradient(180deg, transparent, #00ff41, transparent)",
+        boxShadow: "0 0 20px #00ff41",
+        animation: "bikeVertical1 12s linear infinite",
+        pointerEvents: "none",
+        zIndex: 0,
+        opacity: 0.6
+      }}></div>
+      
+      <div style={{
+        position: "fixed",
+        right: "30%",
+        top: 0,
+        width: "2px",
+        height: "100%",
+        background: "linear-gradient(180deg, transparent, rgba(0, 255, 65, 0.8), transparent)",
+        boxShadow: "0 0 15px #00ff41",
+        animation: "bikeVertical2 15s linear infinite reverse",
+        pointerEvents: "none",
+        zIndex: 0,
+        opacity: 0.5
+      }}></div>
+
       {/* Scanlines effect */}
       <div style={{
         position: "fixed",
@@ -199,7 +294,9 @@ function App() {
       <div style={{
         maxWidth: "1200px",
         margin: "0 auto",
-        marginBottom: "30px"
+        marginBottom: "30px",
+        position: "relative",
+        zIndex: 10
       }}>
         <div style={{
           background: "rgba(0, 20, 0, 0.8)",
@@ -266,7 +363,7 @@ function App() {
       </div>
 
       {/* Tabs */}
-      <div style={{ maxWidth: "1200px", margin: "0 auto 20px auto" }}>
+      <div style={{ maxWidth: "1200px", margin: "0 auto 20px auto", position: "relative", zIndex: 10 }}>
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
           {["dashboard", "control", "configuracion", "historial"].map(tab => (
             <button
@@ -307,7 +404,7 @@ function App() {
       </div>
 
       {/* Main Content */}
-      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+      <div style={{ maxWidth: "1200px", margin: "0 auto", position: "relative", zIndex: 10 }}>
         
         {/* Dashboard Tab */}
         {activeTab === "dashboard" && (
@@ -1103,7 +1200,7 @@ function App() {
           boxShadow: "0 0 30px rgba(0, 255, 65, 0.5), inset 0 0 20px rgba(0, 255, 65, 0.1)",
           border: "2px solid #00ff41",
           animation: "slideIn 0.3s ease-out",
-          zIndex: 1000,
+          zIndex: 10000,
           fontWeight: "600",
           color: "#00ff41",
           textShadow: "0 0 10px #00ff41",
@@ -1119,7 +1216,9 @@ function App() {
         margin: "40px auto 0 auto",
         padding: "20px",
         textAlign: "center",
-        borderTop: "1px solid rgba(0, 255, 65, 0.3)"
+        borderTop: "1px solid rgba(0, 255, 65, 0.3)",
+        position: "relative",
+        zIndex: 10
       }}>
         <p style={{ 
           color: "#00ff41", 
@@ -1226,6 +1325,118 @@ function App() {
           }
           100% {
             transform: translateY(4px);
+          }
+        }
+        @keyframes bike1 {
+          0% {
+            transform: translateX(-100%);
+            opacity: 0;
+          }
+          10% {
+            opacity: 1;
+          }
+          90% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+        }
+        @keyframes bike2 {
+          0% {
+            transform: translateX(-100%) scaleX(0.8);
+            opacity: 0;
+          }
+          15% {
+            opacity: 1;
+          }
+          85% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateX(100%) scaleX(0.8);
+            opacity: 0;
+          }
+        }
+        @keyframes bike3 {
+          0% {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          10% {
+            opacity: 0.8;
+          }
+          90% {
+            opacity: 0.8;
+          }
+          100% {
+            transform: translateX(-100%);
+            opacity: 0;
+          }
+        }
+        @keyframes bike4 {
+          0% {
+            transform: translateX(-100%) scaleX(1.2);
+            opacity: 0;
+          }
+          12% {
+            opacity: 0.7;
+          }
+          88% {
+            opacity: 0.7;
+          }
+          100% {
+            transform: translateX(100%) scaleX(1.2);
+            opacity: 0;
+          }
+        }
+        @keyframes bike5 {
+          0% {
+            transform: translateX(100%) scaleX(0.9);
+            opacity: 0;
+          }
+          8% {
+            opacity: 0.9;
+          }
+          92% {
+            opacity: 0.9;
+          }
+          100% {
+            transform: translateX(-100%) scaleX(0.9);
+            opacity: 0;
+          }
+        }
+        @keyframes bikeVertical1 {
+          0% {
+            transform: translateY(-100%);
+            opacity: 0;
+          }
+          10% {
+            opacity: 0.6;
+          }
+          90% {
+            opacity: 0.6;
+          }
+          100% {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+        }
+        @keyframes bikeVertical2 {
+          0% {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+          10% {
+            opacity: 0.5;
+          }
+          90% {
+            opacity: 0.5;
+          }
+          100% {
+            transform: translateY(-100%);
+            opacity: 0;
           }
         }
         @keyframes waterfall {
