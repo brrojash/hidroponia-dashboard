@@ -1,563 +1,1212 @@
-import React, { useEffect, useState } from "react";
-import mqtt from "mqtt";
-import "./App.css";
+/* ========================================
+   ESTILOS BASE Y CONTENEDOR PRINCIPAL
+======================================== */
 
-const MQTT_URL = "wss://7b5f22e684dc48709742e40ec59586b8.s1.eu.hivemq.cloud:8884/mqtt";
-const MQTT_USER = "esp32";
-const MQTT_PASS = "Hidro1234";
-const BACKEND_URL = "https://hidroponia-backend.onrender.com";
-
-function App() {
-  const [client, setClient] = useState(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [statusMsg, setStatusMsg] = useState("");
-  const [sensorData, setSensorData] = useState({
-    temperatura: "--",
-    humedad: "--",
-    bomba: false,
-    luces: false,
-  });
-
-  const [lastOn, setLastOn] = useState("--");
-  const [lastOff, setLastOff] = useState("--");
-  const [lastLuzOn, setLastLuzOn] = useState("--");
-  const [lastLuzOff, setLastLuzOff] = useState("--");
-
-  const [intervaloOn, setIntervaloOn] = useState("");
-  const [intervaloOff, setIntervaloOff] = useState("");
-
-  const [horaLuzOn, setHoraLuzOn] = useState(22);
-  const [horaLuzOff, setHoraLuzOff] = useState(2);
-
-  const [eventosLuz, setEventosLuz] = useState([]);
-  const [activeTab, setActiveTab] = useState("dashboard");
-  const [dbStats, setDbStats] = useState(null);
-
-  // Funciones de carga de datos
-  const cargarEstadoInicial = async () => {
-    try {
-      const res = await fetch(`${BACKEND_URL}/estado`);
-      const data = await res.json();
-      if (data && data.temperatura !== null) {
-        setSensorData({
-          temperatura: data.temperatura,
-          humedad: data.humedad || 0,
-          bomba: data.bomba,
-          luces: data.luces
-        });
-        const hora = new Date(data.fecha).toLocaleTimeString();
-        if (data.bomba) setLastOn(hora);
-        else setLastOff(hora);
-        if (data.luces) setLastLuzOn(hora);
-        else setLastLuzOff(hora);
-      }
-    } catch (err) {
-      console.error("❌ Error al cargar estado:", err.message);
-    }
-  };
-
-  const cargarConfiguracion = async () => {
-    try {
-      const res = await fetch(`${BACKEND_URL}/registros`);
-      const data = await res.json();
-      const ultima = data.find(d => d.evento === "configuracion_actualizada");
-      if (ultima) {
-        setIntervaloOn(ultima.intervalo_on);
-        setIntervaloOff(ultima.intervalo_off);
-      }
-    } catch (err) {
-      console.error("❌ Error al cargar configuración:", err.message);
-    }
-  };
-
-  const cargarHorarioLuces = async () => {
-    try {
-      const res = await fetch(`${BACKEND_URL}/luces/config`);
-      const data = await res.json();
-      if (data.hora_on !== undefined) setHoraLuzOn(data.hora_on);
-      if (data.hora_off !== undefined) setHoraLuzOff(data.hora_off);
-    } catch (err) {
-      console.error("❌ Error al cargar horario luces:", err.message);
-    }
-  };
-
-  const guardarHorarioLuces = async () => {
-    try {
-      await fetch(`${BACKEND_URL}/luces/config`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hora_on: parseInt(horaLuzOn), hora_off: parseInt(horaLuzOff) }),
-      });
-      setStatusMsg("✅ Horario de luces guardado");
-      setTimeout(() => setStatusMsg(""), 3000);
-    } catch (err) {
-      setStatusMsg("❌ Error al guardar horario de luces");
-      setTimeout(() => setStatusMsg(""), 3000);
-    }
-  };
-
-  const cargarEventosLuz = async () => {
-    try {
-      const res = await fetch(`${BACKEND_URL}/luces`);
-      const data = await res.json();
-      setEventosLuz(data);
-    } catch (err) {
-      console.error("❌ Error al obtener eventos de luces:", err.message);
-    }
-  };
-
-  const cargarEstadisticasBD = async () => {
-    try {
-      const res = await fetch(`${BACKEND_URL}/stats`);
-      const data = await res.json();
-      setDbStats(data);
-    } catch (err) {
-      console.error("❌ Error al obtener estadísticas:", err.message);
-    }
-  };
-
-  const limpiarBaseDatos = async () => {
-    try {
-      setStatusMsg("🧹 Limpiando base de datos...");
-      const res = await fetch(`${BACKEND_URL}/limpiar`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
-      });
-      const data = await res.json();
-      setStatusMsg(`✅ BD limpiada: ${data.eliminados?.registros || 0} registros eliminados`);
-      setTimeout(() => setStatusMsg(""), 5000);
-      cargarEstadisticasBD();
-    } catch (err) {
-      setStatusMsg("❌ Error al limpiar BD");
-      setTimeout(() => setStatusMsg(""), 3000);
-    }
-  };
-
-  const guardarConfiguracion = async () => {
-    const body = {
-      intervalo_on: parseInt(intervaloOn),
-      intervalo_off: parseInt(intervaloOff),
-    };
-    try {
-      await fetch(`${BACKEND_URL}/control`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      setStatusMsg("✅ Configuración guardada");
-      setTimeout(() => setStatusMsg(""), 3000);
-    } catch (e) {
-      setStatusMsg("❌ Error al guardar configuración");
-      setTimeout(() => setStatusMsg(""), 3000);
-    }
-  };
-
-  const publicar = (msg) => {
-    if (client && isConnected) {
-      client.publish("hidroponia/control", msg);
-      setStatusMsg(`📤 Comando enviado: ${msg}`);
-      setTimeout(() => setStatusMsg(""), 3000);
-      
-      setTimeout(() => {
-        cargarEstadoInicial();
-      }, 1000);
-    } else {
-      setStatusMsg("❌ MQTT no conectado");
-      setTimeout(() => setStatusMsg(""), 3000);
-    }
-  };
-
-  useEffect(() => {
-    const client = mqtt.connect(MQTT_URL, {
-      clientId: "dashboard_" + Math.random().toString(16).substr(2, 8),
-      username: MQTT_USER,
-      password: MQTT_PASS,
-      clean: true,
-      reconnectPeriod: 2000,
-    });
-
-    client.on("connect", () => {
-      console.log("✅ Conectado a MQTT");
-      setIsConnected(true);
-      client.subscribe("hidroponia/datos");
-    });
-
-    client.on("message", (topic, message) => {
-      if (topic === "hidroponia/datos") {
-        try {
-          const json = JSON.parse(message.toString());
-          console.log("📥 Datos MQTT recibidos:", json);
-          
-          setSensorData(prevData => ({
-            temperatura: json.temperatura !== undefined ? json.temperatura : prevData.temperatura,
-            humedad: json.humedad !== undefined ? json.humedad : prevData.humedad,
-            bomba: json.bomba !== undefined ? json.bomba : prevData.bomba,
-            luces: json.luces !== undefined ? json.luces : prevData.luces
-          }));
-          
-          const hora = new Date().toLocaleTimeString();
-          if (json.bomba !== undefined) {
-            if (json.bomba) setLastOn(hora);
-            else setLastOff(hora);
-          }
-          if (json.luces !== undefined) {
-            if (json.luces) setLastLuzOn(hora);
-            else setLastLuzOff(hora);
-          }
-        } catch (err) {
-          console.error("❌ Error al parsear mensaje MQTT:", err);
-        }
-      }
-    });
-
-    client.on("error", (err) => {
-      console.error("❌ MQTT Error:", err.message);
-      setIsConnected(false);
-    });
-
-    setClient(client);
-    
-    cargarEstadoInicial();
-    cargarConfiguracion();
-    cargarHorarioLuces();
-    cargarEventosLuz();
-    cargarEstadisticasBD();
-
-    const pollingInterval = setInterval(() => {
-      cargarEstadoInicial();
-    }, 5000);
-
-    const statsInterval = setInterval(() => {
-      cargarEstadisticasBD();
-    }, 30000);
-
-    return () => {
-      client.end();
-      clearInterval(pollingInterval);
-      clearInterval(statsInterval);
-    };
-  }, []);
-
-  return (
-    <div className="app-container">
-      {/* Motos de Tron */}
-      <div className="tron-bike tron-bike-1"></div>
-      <div className="tron-bike tron-bike-2"></div>
-      <div className="tron-bike tron-bike-3"></div>
-      <div className="tron-bike tron-bike-4"></div>
-      <div className="tron-bike tron-bike-5"></div>
-      <div className="tron-bike-vertical tron-bike-v1"></div>
-      <div className="tron-bike-vertical tron-bike-v2"></div>
-      
-      {/* Scanlines */}
-      <div className="scanlines"></div>
-
-      {/* Header */}
-      <div className="header-container">
-        <div className="header-content">
-          <div>
-            <h1 className="main-title">🌿 AGROCOLMETEO</h1>
-            <p className="subtitle">▸ Sistema Hidropónico · Monitoreo y control en tiempo real</p>
-            <p className="creator">Creado por Bryan R.</p>
-          </div>
-          <div className={`status-badge ${isConnected ? 'connected' : 'disconnected'}`}>
-            <div className="status-dot"></div>
-            <span>{isConnected ? "CONECTADO" : "DESCONECTADO"}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="tabs-container">
-        <div className="tabs">
-          {["dashboard", "control", "configuracion", "historial", "mantenimiento"].map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`tab-button ${activeTab === tab ? 'active' : ''}`}
-            >
-              {tab === "dashboard" && "📊"} {tab === "control" && "🎮"} 
-              {tab === "configuracion" && "⚙️"} {tab === "historial" && "📋"} 
-              {tab === "mantenimiento" && "🧹"} {tab}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="main-content">
-        
-        {/* Dashboard Tab */}
-        {activeTab === "dashboard" && (
-          <div className="dashboard-grid">
-            {/* Temperatura */}
-            <div className="sensor-card">
-              <div className="sensor-icon animated-float">🌡️</div>
-              <div className="sensor-label">Temperatura</div>
-              <div className="sensor-value">{sensorData.temperatura}°C</div>
-            </div>
-
-            {/* Humedad */}
-            <div className="sensor-card">
-              <div className="sensor-icon animated-bounce">💧</div>
-              <div className="sensor-label">Humedad</div>
-              <div className="sensor-value">{sensorData.humedad}%</div>
-            </div>
-
-            {/* Bomba */}
-            <div className={`sensor-card ${sensorData.bomba ? 'active' : 'inactive'}`}>
-              {sensorData.bomba && (
-                <>
-                  <div className="waterfall waterfall-1"></div>
-                  <div className="waterfall waterfall-2"></div>
-                  <div className="waterfall waterfall-3"></div>
-                  <div className="waterfall waterfall-4"></div>
-                </>
-              )}
-              <div className={`sensor-icon ${sensorData.bomba ? 'animated-spin' : 'animated-wobble'}`}>⚙️</div>
-              <div className="sensor-label">Bomba</div>
-              <div className="sensor-value">{sensorData.bomba ? "ENCENDIDA" : "APAGADA"}</div>
-              <div className="sensor-time">
-                {sensorData.bomba ? `▸ Desde: ${lastOn}` : `▸ Desde: ${lastOff}`}
-              </div>
-            </div>
-
-            {/* Luces UV */}
-            <div className={`sensor-card ${sensorData.luces ? 'active' : 'inactive'}`}>
-              {sensorData.luces && (
-                <>
-                  <div className="firefly firefly-1"></div>
-                  <div className="firefly firefly-2"></div>
-                  <div className="firefly firefly-3"></div>
-                  <div className="firefly firefly-4"></div>
-                </>
-              )}
-              <div className={`sensor-icon ${sensorData.luces ? 'animated-light' : 'animated-swing'}`}>💡</div>
-              <div className="sensor-label">Luces UV</div>
-              <div className="sensor-value">{sensorData.luces ? "ENCENDIDAS" : "APAGADAS"}</div>
-              <div className="sensor-time">
-                {sensorData.luces ? `▸ Desde: ${lastLuzOn}` : `▸ Desde: ${lastLuzOff}`}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Control Tab */}
-        {activeTab === "control" && (
-          <div className="control-grid">
-            {/* Control Bomba */}
-            <div className="control-card">
-              <h2 className="control-title">🚰 Control de Bomba</h2>
-              <div className={`control-status ${sensorData.bomba ? 'active' : 'inactive'}`}>
-                {sensorData.bomba && (
-                  <>
-                    <div className="waterfall waterfall-1"></div>
-                    <div className="waterfall waterfall-2"></div>
-                    <div className="waterfall waterfall-3"></div>
-                  </>
-                )}
-                <div className={`status-icon ${sensorData.bomba ? 'animated-spin' : 'animated-wobble'}`}>⚙️</div>
-                <div className="status-text">{sensorData.bomba ? "ENCENDIDA" : "APAGADA"}</div>
-              </div>
-              <div className="control-buttons">
-                <button onClick={() => publicar("on")} className="btn btn-on">
-                  ▶ Encender
-                </button>
-                <button onClick={() => publicar("off")} className="btn btn-off">
-                  ⏸ Apagar
-                </button>
-              </div>
-            </div>
-
-            {/* Control Luces */}
-            <div className="control-card">
-              <h2 className="control-title">💡 Control de Luces UV</h2>
-              <div className={`control-status ${sensorData.luces ? 'active' : 'inactive'}`}>
-                {sensorData.luces && (
-                  <>
-                    <div className="firefly firefly-1"></div>
-                    <div className="firefly firefly-2"></div>
-                    <div className="firefly firefly-3"></div>
-                    <div className="firefly firefly-4"></div>
-                  </>
-                )}
-                <div className={`status-icon ${sensorData.luces ? 'animated-light' : 'animated-swing'}`}>💡</div>
-                <div className="status-text">{sensorData.luces ? "ENCENDIDAS" : "APAGADAS"}</div>
-              </div>
-              <div className="control-buttons">
-                <button onClick={() => publicar("luces_on")} className="btn btn-on">
-                  🌞 Encender
-                </button>
-                <button onClick={() => publicar("luces_off")} className="btn btn-off">
-                  🌙 Apagar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Configuracion Tab */}
-        {activeTab === "configuracion" && (
-          <div className="config-grid">
-            {/* Intervalos */}
-            <div className="config-card">
-              <h2 className="config-title">⚙️ Intervalos de Riego</h2>
-              <div className="form-group">
-                <label>⏱️ Minutos encendida:</label>
-                <input
-                  type="number"
-                  value={intervaloOn}
-                  onChange={(e) => setIntervaloOn(e.target.value)}
-                  className="form-input"
-                />
-              </div>
-              <div className="form-group">
-                <label>⏸️ Minutos apagada:</label>
-                <input
-                  type="number"
-                  value={intervaloOff}
-                  onChange={(e) => setIntervaloOff(e.target.value)}
-                  className="form-input"
-                />
-              </div>
-              <button onClick={guardarConfiguracion} className="btn btn-save">
-                💾 Guardar Configuración
-              </button>
-            </div>
-
-            {/* Horario Luces */}
-            <div className="config-card">
-              <h2 className="config-title">🌗 Horario de Luces UV</h2>
-              <div className="form-group">
-                <label>🌞 Hora de encendido (0-23):</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="23"
-                  value={horaLuzOn}
-                  onChange={(e) => setHoraLuzOn(e.target.value)}
-                  className="form-input"
-                />
-              </div>
-              <div className="form-group">
-                <label>🌙 Hora de apagado (0-23):</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="23"
-                  value={horaLuzOff}
-                  onChange={(e) => setHoraLuzOff(e.target.value)}
-                  className="form-input"
-                />
-              </div>
-              <button onClick={guardarHorarioLuces} className="btn btn-save">
-                💾 Guardar Horario
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Historial Tab */}
-        {activeTab === "historial" && (
-          <div className="history-card">
-            <h2 className="history-title">📋 Historial de Eventos</h2>
-            <div className="table-wrapper">
-              <table className="history-table">
-                <thead>
-                  <tr>
-                    <th>🕒 Hora</th>
-                    <th>🔁 Modo</th>
-                    <th>📝 Descripción</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {eventosLuz.length === 0 ? (
-                    <tr>
-                      <td colSpan="3" className="no-data">Sin registros disponibles</td>
-                    </tr>
-                  ) : (
-                    eventosLuz.map((evento, i) => (
-                      <tr key={i}>
-                        <td>{evento.fecha ? new Date(evento.fecha).toLocaleString() : "--"}</td>
-                        <td>
-                          <span className="mode-badge">{evento.modo}</span>
-                        </td>
-                        <td>{evento.descripcion}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Mantenimiento Tab */}
-        {activeTab === "mantenimiento" && (
-          <div className="maintenance-grid">
-            {/* Estadísticas */}
-            <div className="maintenance-card">
-              <h2 className="maintenance-title">📊 Estadísticas BD</h2>
-              {dbStats ? (
-                <div className="stats-container">
-                  <div className="stat-box">
-                    <div className="stat-label">📝 Total Registros</div>
-                    <div className="stat-value">{dbStats.total_registros}</div>
-                  </div>
-                  <div className="stat-box">
-                    <div className="stat-label">💡 Eventos Luces</div>
-                    <div className="stat-value">{dbStats.total_luces}</div>
-                  </div>
-                  <div className="stat-box">
-                    <div className="stat-label">⚙️ Configuraciones</div>
-                    <div className="stat-value">{dbStats.total_config}</div>
-                  </div>
-                </div>
-              ) : (
-                <div className="loading">Cargando estadísticas...</div>
-              )}
-              <button onClick={cargarEstadisticasBD} className="btn btn-save">
-                🔄 Actualizar Estadísticas
-              </button>
-            </div>
-
-            {/* Limpieza */}
-            <div className="maintenance-card">
-              <h2 className="maintenance-title">🧹 Mantenimiento BD</h2>
-              <div className="maintenance-info">
-                <p>La base de datos se limpia automáticamente cada 6 horas manteniendo:</p>
-                <ul>
-                  <li>✓ Últimos 100 registros de sensores</li>
-                  <li>✓ Últimos 50 eventos de luces</li>
-                  <li>✓ Última configuración</li>
-                </ul>
-              </div>
-              <button onClick={limpiarBaseDatos} className="btn btn-clean">
-                🧹 Limpiar BD Ahora
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="footer">
-        <p className="footer-title">
-          <strong>AGROCOLMETEO</strong> · Sistema de Monitoreo Hidropónico
-        </p>
-        <p className="footer-credit">
-          Desarrollado por Bryan R. © {new Date().getFullYear()}
-        </p>
-      </div>
-
-      {/* Status Message */}
-      {statusMsg && (
-        <div className="status-message">
-          {statusMsg}
-        </div>
-      )}
-    </div>
-  );
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-export default App;
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  font-family: 'Orbitron', 'Segoe UI', monospace;
+}
+
+.app-container {
+  min-height: 100vh;
+  background: #000000;
+  background-image: 
+    linear-gradient(0deg, transparent 24%, rgba(0, 255, 65, 0.05) 25%, rgba(0, 255, 65, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 255, 65, 0.05) 75%, rgba(0, 255, 65, 0.05) 76%, transparent 77%, transparent),
+    linear-gradient(90deg, transparent 24%, rgba(0, 255, 65, 0.05) 25%, rgba(0, 255, 65, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 255, 65, 0.05) 75%, rgba(0, 255, 65, 0.05) 76%, transparent 77%, transparent);
+  background-size: 50px 50px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ========================================
+   MOTOS TRON - EFECTOS DE FONDO
+======================================== */
+
+.tron-bike {
+  position: fixed;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.tron-bike-1 {
+  top: 15%;
+  background: linear-gradient(90deg, transparent, #ffff00, transparent);
+  box-shadow: 0 0 20px #ffff00;
+  animation: bike1 8s linear infinite;
+}
+
+.tron-bike-2 {
+  top: 35%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #00bfff, #00bfff, transparent);
+  box-shadow: 0 0 30px #00bfff;
+  animation: bike2 6s linear infinite;
+}
+
+.tron-bike-3 {
+  top: 55%;
+  background: linear-gradient(90deg, transparent, #ffd700, transparent);
+  box-shadow: 0 0 15px #ffd700;
+  animation: bike3 10s linear infinite reverse;
+}
+
+.tron-bike-4 {
+  top: 75%;
+  background: linear-gradient(90deg, transparent, rgba(0, 191, 255, 0.7), transparent);
+  box-shadow: 0 0 25px #00bfff;
+  animation: bike4 7s linear infinite;
+}
+
+.tron-bike-5 {
+  top: 90%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #ffff00, transparent);
+  box-shadow: 0 0 20px #ffff00;
+  animation: bike5 9s linear infinite reverse;
+}
+
+.tron-bike-vertical {
+  position: fixed;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.tron-bike-v1 {
+  left: 20%;
+  background: linear-gradient(180deg, transparent, #00bfff, transparent);
+  box-shadow: 0 0 20px #00bfff;
+  animation: bikeVertical1 12s linear infinite;
+  opacity: 0.6;
+}
+
+.tron-bike-v2 {
+  right: 30%;
+  background: linear-gradient(180deg, transparent, rgba(255, 215, 0, 0.8), transparent);
+  box-shadow: 0 0 15px #ffd700;
+  animation: bikeVertical2 15s linear infinite reverse;
+  opacity: 0.5;
+}
+
+/* Scanlines */
+.scanlines {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(0deg, transparent 0%, rgba(0, 255, 65, 0.03) 50%, transparent 100%);
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 9999;
+  animation: scanlines 8s linear infinite;
+}
+
+/* ========================================
+   HEADER
+======================================== */
+
+.header-container {
+  max-width: 1200px;
+  margin: 0 auto 30px;
+  position: relative;
+  z-index: 10;
+}
+
+.header-content {
+  background: rgba(0, 20, 0, 0.8);
+  border-radius: 5px;
+  padding: 30px;
+  box-shadow: 0 0 30px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 255, 65, 0.1);
+  border: 2px solid #00ff41;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  transition: all 0.3s ease;
+}
+
+.main-title {
+  margin: 0;
+  font-size: 32px;
+  color: #00ff41;
+  font-weight: bold;
+  text-shadow: 0 0 20px #00ff41, 0 0 40px #00ff41;
+  letter-spacing: 2px;
+  transition: all 0.3s ease;
+}
+
+.subtitle {
+  margin: 5px 0 0 0;
+  color: #00ff41;
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.creator {
+  margin: 5px 0 0 0;
+  color: #00ff41;
+  font-size: 12px;
+  opacity: 0.5;
+  font-style: italic;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.6);
+  transition: all 0.3s ease;
+}
+
+.status-badge.connected {
+  border: 2px solid #00ff41;
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+}
+
+.status-badge.connected .status-dot {
+  background: #00ff41;
+  box-shadow: 0 0 10px #00ff41;
+  animation: pulse 2s infinite;
+}
+
+.status-badge.connected span {
+  color: #00ff41;
+  text-shadow: 0 0 10px #00ff41;
+}
+
+.status-badge.disconnected {
+  border: 2px solid #ff0040;
+  box-shadow: 0 0 20px rgba(255, 0, 64, 0.5);
+}
+
+.status-badge.disconnected .status-dot {
+  background: #ff0040;
+  box-shadow: 0 0 10px #ff0040;
+}
+
+.status-badge.disconnected span {
+  color: #ff0040;
+  text-shadow: 0 0 10px #ff0040;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.status-badge span {
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+/* ========================================
+   TABS
+======================================== */
+
+.tabs-container {
+  max-width: 1200px;
+  margin: 0 auto 20px;
+  position: relative;
+  z-index: 10;
+}
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.tab-button {
+  padding: 12px 24px;
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid rgba(0, 255, 65, 0.3);
+  color: rgba(0, 255, 65, 0.7);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-family: 'Orbitron', monospace;
+}
+
+.tab-button:hover {
+  background: rgba(0, 255, 65, 0.1);
+  border-color: #00ff41;
+}
+
+.tab-button.active {
+  background: rgba(0, 255, 65, 0.2);
+  border: 2px solid #00ff41;
+  color: #00ff41;
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+  text-shadow: 0 0 10px #00ff41;
+}
+
+/* ========================================
+   MAIN CONTENT
+======================================== */
+
+.main-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 10;
+}
+
+/* ========================================
+   DASHBOARD - TARJETAS DE SENSORES
+======================================== */
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.sensor-card {
+  background: rgba(0, 20, 0, 0.8);
+  border-radius: 5px;
+  padding: 30px;
+  box-shadow: 0 0 30px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 255, 65, 0.05);
+  border: 2px solid #00ff41;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+
+.sensor-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 0 40px rgba(0, 255, 65, 0.5), inset 0 0 30px rgba(0, 255, 65, 0.1);
+}
+
+.sensor-card.active {
+  border-color: #00ff41;
+  box-shadow: 0 0 30px rgba(0, 255, 65, 0.5), inset 0 0 20px rgba(0, 255, 65, 0.1);
+}
+
+.sensor-card.inactive {
+  border-color: #ff0040;
+  box-shadow: 0 0 30px rgba(255, 0, 64, 0.3), inset 0 0 20px rgba(255, 0, 64, 0.05);
+}
+
+.sensor-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 0 10px #00ff41);
+  display: inline-block;
+  position: relative;
+  z-index: 1;
+}
+
+.sensor-card.active .sensor-icon {
+  filter: drop-shadow(0 0 10px #00ff41);
+}
+
+.sensor-card.inactive .sensor-icon {
+  filter: drop-shadow(0 0 10px #ff0040);
+}
+
+.sensor-label {
+  font-size: 14px;
+  color: #00ff41;
+  opacity: 0.7;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.sensor-card.inactive .sensor-label {
+  color: #ff0040;
+}
+
+.sensor-value {
+  font-size: 36px;
+  font-weight: bold;
+  color: #00ff41;
+  text-shadow: 0 0 20px #00ff41;
+}
+
+.sensor-card.inactive .sensor-value {
+  color: #ff0040;
+  text-shadow: 0 0 20px #ff0040;
+}
+
+.sensor-time {
+  font-size: 12px;
+  margin-top: 10px;
+  opacity: 0.6;
+  color: #00ff41;
+}
+
+.sensor-card.inactive .sensor-time {
+  color: #ff0040;
+}
+
+/* Efectos de cascada */
+.waterfall {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background: linear-gradient(180deg, transparent, #00ff41, transparent);
+  animation: waterfall 1.5s linear infinite;
+}
+
+.waterfall-1 { left: 20%; opacity: 0.6; animation-delay: 0s; }
+.waterfall-2 { left: 40%; opacity: 0.4; animation-delay: 0.3s; }
+.waterfall-3 { left: 60%; opacity: 0.5; animation-delay: 0.6s; }
+.waterfall-4 { left: 80%; opacity: 0.3; animation-delay: 0.9s; }
+
+/* Luciérnagas */
+.firefly {
+  position: absolute;
+  border-radius: 50%;
+  background: #00ff41;
+  box-shadow: 0 0 10px #00ff41;
+}
+
+.firefly-1 { top: 30%; left: 20%; width: 4px; height: 4px; animation: firefly1 3s ease-in-out infinite; }
+.firefly-2 { top: 50%; right: 15%; width: 3px; height: 3px; animation: firefly2 4s ease-in-out infinite; }
+.firefly-3 { top: 25%; right: 25%; width: 5px; height: 5px; animation: firefly3 3.5s ease-in-out infinite; }
+.firefly-4 { bottom: 30%; left: 15%; width: 4px; height: 4px; animation: firefly4 4.5s ease-in-out infinite; }
+
+/* ========================================
+   CONTROL - BOTONES
+======================================== */
+
+.control-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.control-card {
+  background: rgba(0, 20, 0, 0.8);
+  border-radius: 5px;
+  padding: 30px;
+  box-shadow: 0 0 30px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 255, 65, 0.05);
+  border: 2px solid #00ff41;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.control-title {
+  margin-top: 0;
+  color: #00ff41;
+  font-size: 24px;
+  text-shadow: 0 0 10px #00ff41;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.control-status {
+  padding: 20px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+  text-align: center;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.control-status.active {
+  background: rgba(0, 255, 65, 0.2);
+  border: 1px solid #00ff41;
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+}
+
+.control-status.inactive {
+  background: rgba(255, 0, 64, 0.2);
+  border: 1px solid #ff0040;
+  box-shadow: 0 0 20px rgba(255, 0, 64, 0.3);
+}
+
+.status-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+  display: inline-block;
+  position: relative;
+  z-index: 1;
+}
+
+.status-text {
+  font-size: 20px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.control-status.active .status-text {
+  color: #00ff41;
+  text-shadow: 0 0 10px #00ff41;
+  animation: textGlow 1.5s ease-in-out infinite;
+}
+
+.control-status.inactive .status-text {
+  color: #ff0040;
+  text-shadow: 0 0 10px #ff0040;
+}
+
+.control-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.btn {
+  flex: 1;
+  padding: 15px;
+  border-radius: 5px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-family: 'Orbitron', monospace;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(0, 255, 65, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+.btn:active {
+  transform: scale(0.95);
+}
+
+.btn-on {
+  border: 2px solid #00ff41;
+  background: rgba(0, 255, 65, 0.2);
+  color: #00ff41;
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+}
+
+.btn-on:hover {
+  background: rgba(0, 255, 65, 0.4);
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.6);
+  text-shadow: 0 0 10px #00ff41;
+}
+
+.btn-off {
+  border: 2px solid #ff0040;
+  background: rgba(255, 0, 64, 0.2);
+  color: #ff0040;
+  box-shadow: 0 0 10px rgba(255, 0, 64, 0.3);
+}
+
+.btn-off:hover {
+  background: rgba(255, 0, 64, 0.4);
+  box-shadow: 0 0 20px rgba(255, 0, 64, 0.6);
+  text-shadow: 0 0 10px #ff0040;
+}
+
+.btn-save {
+  width: 100%;
+  border: 2px solid #00ff41;
+  background: rgba(0, 255, 65, 0.2);
+  color: #00ff41;
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+}
+
+.btn-save:hover {
+  background: rgba(0, 255, 65, 0.4);
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.6);
+  text-shadow: 0 0 10px #00ff41;
+}
+
+.btn-clean {
+  width: 100%;
+  border: 2px solid #ffd700;
+  background: rgba(255, 215, 0, 0.2);
+  color: #ffd700;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.btn-clean:hover {
+  background: rgba(255, 215, 0, 0.4);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+  text-shadow: 0 0 10px #ffd700;
+}
+
+/* ========================================
+   CONFIGURACIÓN - FORMULARIOS
+======================================== */
+
+.config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.config-card {
+  background: rgba(0, 20, 0, 0.8);
+  border-radius: 5px;
+  padding: 30px;
+  box-shadow: 0 0 30px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 255, 65, 0.05);
+  border: 2px solid #00ff41;
+  transition: all 0.3s ease;
+}
+
+.config-title {
+  margin-top: 0;
+  color: #00ff41;
+  font-size: 24px;
+  text-shadow: 0 0 10px #00ff41;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 10px;
+  color: #00ff41;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 14px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 15px;
+  border: 2px solid #00ff41;
+  border-radius: 5px;
+  font-size: 16px;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.6);
+  color: #00ff41;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  font-family: 'Orbitron', monospace;
+}
+
+.form-input:focus {
+  outline: none;
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.form-input::-webkit-inner-spin-button,
+.form-input::-webkit-outer-spin-button {
+  opacity: 1;
+  filter: invert(1) hue-rotate(90deg);
+}
+
+/* ========================================
+   HISTORIAL - TABLA
+======================================== */
+
+.history-card {
+  background: rgba(0, 20, 0, 0.8);
+  border-radius: 5px;
+  padding: 30px;
+  box-shadow: 0 0 30px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 255, 65, 0.05);
+  border: 2px solid #00ff41;
+  transition: all 0.3s ease;
+}
+
+.history-title {
+  margin-top: 0;
+  color: #00ff41;
+  font-size: 24px;
+  text-shadow: 0 0 10px #00ff41;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.history-table thead tr {
+  background: rgba(0, 255, 65, 0.2);
+  color: #00ff41;
+}
+
+.history-table th {
+  padding: 15px;
+  text-align: left;
+  border: 1px solid #00ff41;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 14px;
+}
+
+.history-table tbody tr {
+  border-bottom: 1px solid rgba(0, 255, 65, 0.3);
+  transition: all 0.3s ease;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.history-table tbody tr:hover {
+  background: rgba(0, 255, 65, 0.1);
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+}
+
+.history-table td {
+  padding: 15px;
+  color: #00ff41;
+  border: 1px solid rgba(0, 255, 65, 0.3);
+}
+
+.no-data {
+  text-align: center;
+  opacity: 0.5;
+}
+
+.mode-badge {
+  padding: 5px 15px;
+  border-radius: 5px;
+  background: rgba(0, 255, 65, 0.2);
+  color: #00ff41;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid #00ff41;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ========================================
+   MANTENIMIENTO
+======================================== */
+
+.maintenance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.maintenance-card {
+  background: rgba(0, 20, 0, 0.8);
+  border-radius: 5px;
+  padding: 30px;
+  box-shadow: 0 0 30px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 255, 65, 0.05);
+  border: 2px solid #00ff41;
+  transition: all 0.3s ease;
+}
+
+.maintenance-title {
+  margin-top: 0;
+  color: #00ff41;
+  font-size: 24px;
+  text-shadow: 0 0 10px #00ff41;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.stats-container {
+  color: #00ff41;
+}
+
+.stat-box {
+  margin-bottom: 15px;
+  padding: 15px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 5px;
+  border: 1px solid rgba(0, 255, 65, 0.3);
+}
+
+.stat-label {
+  font-size: 14px;
+  opacity: 0.7;
+  margin-bottom: 5px;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: bold;
+  text-shadow: 0 0 10px #00ff41;
+}
+
+.loading {
+  color: #00ff41;
+  opacity: 0.5;
+  text-align: center;
+  padding: 30px;
+}
+
+.maintenance-info {
+  color: #00ff41;
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+.maintenance-info p {
+  opacity: 0.8;
+}
+
+.maintenance-info ul {
+  list-style: none;
+  padding: 0;
+}
+
+.maintenance-info li {
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  margin-bottom: 5px;
+  border-radius: 5px;
+  border: 1px solid rgba(0, 255, 65, 0.3);
+}
+
+/* ========================================
+   FOOTER
+======================================== */
+
+.footer {
+  max-width: 1200px;
+  margin: 40px auto 0;
+  padding: 20px;
+  text-align: center;
+  border-top: 1px solid rgba(0, 255, 65, 0.3);
+  position: relative;
+  z-index: 10;
+}
+
+.footer-title {
+  color: #00ff41;
+  font-size: 14px;
+  margin: 5px 0;
+  opacity: 0.7;
+  letter-spacing: 1px;
+}
+
+.footer-title strong {
+  text-shadow: 0 0 10px #00ff41;
+}
+
+.footer-credit {
+  color: #00ff41;
+  font-size: 12px;
+  margin: 5px 0;
+  opacity: 0.5;
+  font-style: italic;
+}
+
+/* ========================================
+   STATUS MESSAGE
+======================================== */
+
+.status-message {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background: rgba(0, 20, 0, 0.95);
+  padding: 20px 30px;
+  border-radius: 5px;
+  box-shadow: 0 0 30px rgba(0, 255, 65, 0.5), inset 0 0 20px rgba(0, 255, 65, 0.1);
+  border: 2px solid #00ff41;
+  animation: slideIn 0.3s ease-out;
+  z-index: 10000;
+  font-weight: 600;
+  color: #00ff41;
+  text-shadow: 0 0 10px #00ff41;
+  letter-spacing: 1px;
+}
+
+/* ========================================
+   ANIMACIONES ICONOS
+======================================== */
+
+.animated-float {
+  animation: float 3s ease-in-out infinite, pulse 4s ease-in-out infinite;
+}
+
+.animated-bounce {
+  animation: bounce 2s ease-in-out infinite, shimmer 3s ease-in-out infinite;
+}
+
+.animated-spin {
+  animation: spin 2s linear infinite, breathe 2s ease-in-out infinite;
+}
+
+.animated-wobble {
+  animation: wobble 3s ease-in-out infinite;
+}
+
+.animated-light {
+  animation: lightPulse 1.5s ease-in-out infinite;
+}
+
+.animated-swing {
+  animation: swing 3s ease-in-out infinite;
+}
+
+/* ========================================
+   KEYFRAMES - ANIMACIONES
+======================================== */
+
+@keyframes pulse {
+  0%, 100% { 
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes lightPulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 15px #00ff41) brightness(1);
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 25px #00ff41) brightness(1.3);
+    transform: scale(1.05);
+  }
+}
+
+@keyframes textGlow {
+  0%, 100% {
+    text-shadow: 0 0 20px #00ff41;
+  }
+  50% {
+    text-shadow: 0 0 30px #00ff41, 0 0 40px #00ff41;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes shimmer {
+  0%, 100% {
+    filter: drop-shadow(0 0 10px #00ff41) brightness(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 15px #00ff41) brightness(1.2);
+  }
+}
+
+@keyframes scanlines {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(4px); }
+}
+
+@keyframes waterfall {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  50% { opacity: 1; }
+  100% {
+    transform: translateY(200%);
+    opacity: 0;
+  }
+}
+
+@keyframes breathe {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.05);
+  }
+}
+
+@keyframes wobble {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+
+@keyframes swing {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+@keyframes firefly1 {
+  0%, 100% {
+    transform: translate(0, 0);
+    opacity: 0.3;
+  }
+  25% {
+    transform: translate(-20px, -15px);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-10px, -30px);
+    opacity: 0.5;
+  }
+  75% {
+    transform: translate(10px, -20px);
+    opacity: 0.8;
+  }
+}
+
+@keyframes firefly2 {
+  0%, 100% {
+    transform: translate(0, 0);
+    opacity: 0.4;
+  }
+  25% {
+    transform: translate(15px, -20px);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate(25px, -10px);
+    opacity: 0.6;
+  }
+  75% {
+    transform: translate(10px, -25px);
+    opacity: 1;
+  }
+}
+
+@keyframes firefly3 {
+  0%, 100% {
+    transform: translate(0, 0);
+    opacity: 0.5;
+  }
+  33% {
+    transform: translate(-15px, 20px);
+    opacity: 1;
+  }
+  66% {
+    transform: translate(10px, 15px);
+    opacity: 0.7;
+  }
+}
+
+@keyframes firefly4 {
+  0%, 100% {
+    transform: translate(0, 0);
+    opacity: 0.6;
+  }
+  25% {
+    transform: translate(-10px, 15px);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translate(-20px, 5px);
+    opacity: 1;
+  }
+  75% {
+    transform: translate(-15px, 20px);
+    opacity: 0.4;
+  }
+}
+
+@keyframes bike1 {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes bike2 {
+  0% {
+    transform: translateX(-100%) scaleX(0.8);
+    opacity: 0;
+  }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% {
+    transform: translateX(100%) scaleX(0.8);
+    opacity: 0;
+  }
+}
+
+@keyframes bike3 {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  10% { opacity: 0.8; }
+  90% { opacity: 0.8; }
+  100% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+
+@keyframes bike4 {
+  0% {
+    transform: translateX(-100%) scaleX(1.2);
+    opacity: 0;
+  }
+  12% { opacity: 0.7; }
+  88% { opacity: 0.7; }
+  100% {
+    transform: translateX(100%) scaleX(1.2);
+    opacity: 0;
+  }
+}
+
+@keyframes bike5 {
+  0% {
+    transform: translateX(100%) scaleX(0.9);
+    opacity: 0;
+  }
+  8% { opacity: 0.9; }
+  92% { opacity: 0.9; }
+  100% {
+    transform: translateX(-100%) scaleX(0.9);
+    opacity: 0;
+  }
+}
+
+@keyframes bikeVertical1 {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.6; }
+  100% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes bikeVertical2 {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  10% { opacity: 0.5; }
+  90% { opacity: 0.5; }
+  100% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+
+/* ========================================
+   SCROLLBAR PERSONALIZADO
+======================================== */
+
+::selection {
+  background: rgba(0, 255, 65, 0.3);
+  color: #00ff41;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(0, 255, 65, 0.3);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 65, 0.5);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 65, 0.8);
+}
+
+/* ========================================
+   RESPONSIVE
+======================================== */
+
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .main-title {
+    font-size: 24px;
+  }
+
+  .tabs {
+    justify-content: center;
+  }
+
+  .tab-button {
+    font-size: 12px;
+    padding: 10px 16px;
+  }
+
+  .sensor-value {
+    font-size: 28px;
+  }
+
+  .dashboard-grid,
+  .control-grid,
+  .config-grid,
+  .maintenance-grid {
+    grid-template-columns: 1fr;
+  }
+}
