@@ -15,16 +15,21 @@ function App() {
     temperatura: "--",
     humedad: "--",
     bomba: false,
+    bomba2: false,
     luces: false,
   });
 
   const [lastOn, setLastOn] = useState("--");
   const [lastOff, setLastOff] = useState("--");
+  const [lastOn2, setLastOn2] = useState("--");
+  const [lastOff2, setLastOff2] = useState("--");
   const [lastLuzOn, setLastLuzOn] = useState("--");
   const [lastLuzOff, setLastLuzOff] = useState("--");
 
   const [intervaloOn, setIntervaloOn] = useState("");
   const [intervaloOff, setIntervaloOff] = useState("");
+  const [intervaloOn2, setIntervaloOn2] = useState("");
+  const [intervaloOff2, setIntervaloOff2] = useState("");
 
   const [horaLuzOn, setHoraLuzOn] = useState(22);
   const [horaLuzOff, setHoraLuzOff] = useState(2);
@@ -41,12 +46,15 @@ function App() {
         setSensorData({
           temperatura: data.temperatura,
           humedad: data.humedad || 0,
-          bomba: data.bomba,
+          bomba: data.bomba1 !== undefined ? data.bomba1 : data.bomba,
+          bomba2: data.bomba2 || false,
           luces: data.luces
         });
         const hora = new Date(data.fecha).toLocaleTimeString();
-        if (data.bomba) setLastOn(hora);
+        if (data.bomba1 !== undefined ? data.bomba1 : data.bomba) setLastOn(hora);
         else setLastOff(hora);
+        if (data.bomba2) setLastOn2(hora);
+        else setLastOff2(hora);
         if (data.luces) setLastLuzOn(hora);
         else setLastLuzOff(hora);
       }
@@ -57,12 +65,20 @@ function App() {
 
   const cargarConfiguracion = async () => {
     try {
-      const res = await fetch(`${BACKEND_URL}/registros`);
-      const data = await res.json();
-      const ultima = data.find(d => d.evento === "configuracion_actualizada");
-      if (ultima) {
-        setIntervaloOn(ultima.intervalo_on);
-        setIntervaloOff(ultima.intervalo_off);
+      // Cargar configuración bomba 1
+      const res1 = await fetch(`${BACKEND_URL}/control/1`);
+      const data1 = await res1.json();
+      if (data1 && data1.intervalo_on) {
+        setIntervaloOn(data1.intervalo_on);
+        setIntervaloOff(data1.intervalo_off);
+      }
+
+      // Cargar configuración bomba 2
+      const res2 = await fetch(`${BACKEND_URL}/control/2`);
+      const data2 = await res2.json();
+      if (data2 && data2.intervalo_on) {
+        setIntervaloOn2(data2.intervalo_on);
+        setIntervaloOff2(data2.intervalo_off);
       }
     } catch (err) {
       console.error("Error al cargar configuración:", err.message);
@@ -132,10 +148,14 @@ function App() {
     }
   };
 
-  const guardarConfiguracion = async () => {
+  const guardarConfiguracion = async (numero_bomba = 1) => {
+    const intervalo_on_value = numero_bomba === 1 ? parseInt(intervaloOn) : parseInt(intervaloOn2);
+    const intervalo_off_value = numero_bomba === 1 ? parseInt(intervaloOff) : parseInt(intervaloOff2);
+
     const body = {
-      intervalo_on: parseInt(intervaloOn),
-      intervalo_off: parseInt(intervaloOff),
+      intervalo_on: intervalo_on_value,
+      intervalo_off: intervalo_off_value,
+      numero_bomba: numero_bomba
     };
     try {
       await fetch(`${BACKEND_URL}/control`, {
@@ -143,10 +163,10 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      setStatusMsg("✅ Configuración guardada");
+      setStatusMsg(`✅ Configuración Bomba ${numero_bomba} guardada`);
       setTimeout(() => setStatusMsg(""), 3000);
     } catch (e) {
-      setStatusMsg("❌ Error al guardar configuración");
+      setStatusMsg(`❌ Error al guardar configuración Bomba ${numero_bomba}`);
       setTimeout(() => setStatusMsg(""), 3000);
     }
   };
@@ -186,18 +206,23 @@ function App() {
         try {
           const json = JSON.parse(message.toString());
           console.log("📥 Datos MQTT recibidos:", json);
-          
+
           setSensorData(prevData => ({
             temperatura: json.temperatura !== undefined ? json.temperatura : prevData.temperatura,
             humedad: json.humedad !== undefined ? json.humedad : prevData.humedad,
             bomba: json.bomba !== undefined ? json.bomba : prevData.bomba,
+            bomba2: json.bomba2 !== undefined ? json.bomba2 : prevData.bomba2,
             luces: json.luces !== undefined ? json.luces : prevData.luces
           }));
-          
+
           const hora = new Date().toLocaleTimeString();
           if (json.bomba !== undefined) {
             if (json.bomba) setLastOn(hora);
             else setLastOff(hora);
+          }
+          if (json.bomba2 !== undefined) {
+            if (json.bomba2) setLastOn2(hora);
+            else setLastOff2(hora);
           }
           if (json.luces !== undefined) {
             if (json.luces) setLastLuzOn(hora);
@@ -307,10 +332,27 @@ function App() {
                 </>
               )}
               <div className={`sensor-icon ${sensorData.bomba ? 'animated-spin' : 'animated-wobble'}`}>⚙️</div>
-              <div className="sensor-label">Bomba</div>
+              <div className="sensor-label">Bomba 1</div>
               <div className="sensor-value">{sensorData.bomba ? "ENCENDIDA" : "APAGADA"}</div>
               <div className="sensor-time">
                 {sensorData.bomba ? `▸ Desde: ${lastOn}` : `▸ Desde: ${lastOff}`}
+              </div>
+            </div>
+
+            <div className={`sensor-card ${sensorData.bomba2 ? 'active' : 'inactive'}`}>
+              {sensorData.bomba2 && (
+                <>
+                  <div className="waterfall waterfall-1"></div>
+                  <div className="waterfall waterfall-2"></div>
+                  <div className="waterfall waterfall-3"></div>
+                  <div className="waterfall waterfall-4"></div>
+                </>
+              )}
+              <div className={`sensor-icon ${sensorData.bomba2 ? 'animated-spin' : 'animated-wobble'}`}>⚙️</div>
+              <div className="sensor-label">Bomba 2</div>
+              <div className="sensor-value">{sensorData.bomba2 ? "ENCENDIDA" : "APAGADA"}</div>
+              <div className="sensor-time">
+                {sensorData.bomba2 ? `▸ Desde: ${lastOn2}` : `▸ Desde: ${lastOff2}`}
               </div>
             </div>
 
@@ -336,7 +378,7 @@ function App() {
         {activeTab === "control" && (
           <div className="control-grid">
             <div className="control-card">
-              <h2 className="control-title">🚰 Control de Bomba</h2>
+              <h2 className="control-title">🚰 Control de Bomba 1</h2>
               <div className={`control-status ${sensorData.bomba ? 'active' : 'inactive'}`}>
                 {sensorData.bomba && (
                   <>
@@ -349,10 +391,33 @@ function App() {
                 <div className="status-text">{sensorData.bomba ? "ENCENDIDA" : "APAGADA"}</div>
               </div>
               <div className="control-buttons">
-                <button onClick={() => publicar("on")} className="btn btn-on">
+                <button onClick={() => publicar("bomba1_on")} className="btn btn-on">
                   ▶ Encender
                 </button>
-                <button onClick={() => publicar("off")} className="btn btn-off">
+                <button onClick={() => publicar("bomba1_off")} className="btn btn-off">
+                  ⏸ Apagar
+                </button>
+              </div>
+            </div>
+
+            <div className="control-card">
+              <h2 className="control-title">🚰 Control de Bomba 2</h2>
+              <div className={`control-status ${sensorData.bomba2 ? 'active' : 'inactive'}`}>
+                {sensorData.bomba2 && (
+                  <>
+                    <div className="waterfall waterfall-1"></div>
+                    <div className="waterfall waterfall-2"></div>
+                    <div className="waterfall waterfall-3"></div>
+                  </>
+                )}
+                <div className={`status-icon ${sensorData.bomba2 ? 'animated-spin' : 'animated-wobble'}`}>⚙️</div>
+                <div className="status-text">{sensorData.bomba2 ? "ENCENDIDA" : "APAGADA"}</div>
+              </div>
+              <div className="control-buttons">
+                <button onClick={() => publicar("bomba2_on")} className="btn btn-on">
+                  ▶ Encender
+                </button>
+                <button onClick={() => publicar("bomba2_off")} className="btn btn-off">
                   ⏸ Apagar
                 </button>
               </div>
@@ -387,7 +452,7 @@ function App() {
         {activeTab === "configuracion" && (
           <div className="config-grid">
             <div className="config-card">
-              <h2 className="config-title">⚙️ Intervalos de Riego</h2>
+              <h2 className="config-title">⚙️ Intervalos de Riego - Bomba 1</h2>
               <div className="form-group">
                 <label>⏱️ Minutos encendida:</label>
                 <input
@@ -406,8 +471,33 @@ function App() {
                   className="form-input"
                 />
               </div>
-              <button onClick={guardarConfiguracion} className="btn btn-save">
-                💾 Guardar Configuración
+              <button onClick={() => guardarConfiguracion(1)} className="btn btn-save">
+                💾 Guardar Configuración Bomba 1
+              </button>
+            </div>
+
+            <div className="config-card">
+              <h2 className="config-title">⚙️ Intervalos de Riego - Bomba 2</h2>
+              <div className="form-group">
+                <label>⏱️ Minutos encendida:</label>
+                <input
+                  type="number"
+                  value={intervaloOn2}
+                  onChange={(e) => setIntervaloOn2(e.target.value)}
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label>⏸️ Minutos apagada:</label>
+                <input
+                  type="number"
+                  value={intervaloOff2}
+                  onChange={(e) => setIntervaloOff2(e.target.value)}
+                  className="form-input"
+                />
+              </div>
+              <button onClick={() => guardarConfiguracion(2)} className="btn btn-save">
+                💾 Guardar Configuración Bomba 2
               </button>
             </div>
 
@@ -437,6 +527,29 @@ function App() {
               </div>
               <button onClick={guardarHorarioLuces} className="btn btn-save">
                 💾 Guardar Horario
+              </button>
+            </div>
+
+            <div className="config-card">
+              <h2 className="config-title">🔄 Control ESP32</h2>
+              <div className="form-group">
+                <label style={{marginBottom: '10px', display: 'block'}}>
+                  ⚠️ Reiniciar el ESP32 para aplicar nueva configuración
+                </label>
+                <p style={{fontSize: '14px', color: '#aaa', marginBottom: '20px'}}>
+                  Después de guardar los intervalos, reinicia el ESP32 para que lea la nueva configuración.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  if (window.confirm('¿Estás seguro de reiniciar el ESP32? Esto tomará unos segundos.')) {
+                    publicar("reset");
+                  }
+                }}
+                className="btn btn-off"
+                style={{width: '100%'}}
+              >
+                🔄 Reiniciar ESP32
               </button>
             </div>
           </div>
